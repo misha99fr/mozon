@@ -1,17 +1,15 @@
-local bootfs, gpu, screen
 do
-    bootfs = component.proxy(computer.getBootAddress())
-    if computer.getBootGpu then
-        gpu = computer.getBootGpu()
-    else
-        gpu = component.list("gpu")()
+    local bootaddress, invoke = computer.getBootAddress(), component.invoke
+    local function raw_loadfile(path)
+        local file, buffer = assert(invoke(bootaddress, "open", path, "rb")), ""
+        repeat
+            local data = assert(invoke(bootaddress, "read", file, math.huge))
+            buffer = buffer .. (data or "")
+        until not data
+        return load(buffer, "=" .. path, "bt", _ENV)
     end
-    if computer.getBootScreen then
-        gpu = computer.getBootGpu()
-    else
-        gpu = component.list("screen")()
-    end
-    gpu = component.proxy(gpu)
-    gpu.bind(screen)
 end
 
+while true do
+    
+end
