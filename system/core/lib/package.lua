@@ -1,7 +1,6 @@
 local package = {}
 
 package.libsPaths = {}
-package.modulesPaths = {}
 package.loaded = {package = package}
 
 function _G.require(name)
