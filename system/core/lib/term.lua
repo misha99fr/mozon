@@ -28,19 +28,34 @@ end
 
 ------------------------------------
 
+function term.restoreScreenSettings(screen)
+    
+end
+
+function term.saveScreenSettings(screen)
+    
+end
+
 local freeGpu = {}
 function term.findGpu(screen)
-    local deviceinfo, gpu = computer.getDeviceInfo()
-    local screenCapacity = deviceinfo[screen].capacity
+    local deviceinfo, bestGpu = computer.getDeviceInfo()
+    local screenLevel = deviceinfo[screen].capacity or 0
 
-    for address in component.list() do
-        
+    for address in component.list("gpu") do
+        while true do
+            local gpuLevel = deviceinfo[address].capacity or 0
+            if gpuLevel == screenLevel then
+                gpuLevel = gpuLevel + 1000
+            end
+        end
     end
-    while true do
-        local gpuCapacity = deviceinfo[screen].capacity
+    
+    local gpu = component.proxy(bestGpu)
+    if gpu.getScreen() ~= screen then
+        gpu.bind(screen)
     end
-
-    return component.proxy(gpu)
+    term.restoreScreenSettings(screen)
+    return gpu
 end
 
 term.window = window
