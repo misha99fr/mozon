@@ -16,6 +16,8 @@ function window:new(screen, x, y, sizeX, sizeY)
         y = y,
         sizeX = sizeX,
         sizeY = sizeY,
+        posX = 1,
+        posY = 1,
     }
 
     setmetatable(obj, self)
@@ -42,6 +44,10 @@ function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
 end
 
 function window:clear(color)
+    self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
+end
+
+function window:write(color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 

@@ -36,3 +36,5 @@ do --package
     _G.component = nil
     _G.unicode = nil
 end
+
+----------------------------------
