@@ -36,7 +36,7 @@ function window:fill(x, y, sizeX, sizeY, background, foreground, char)
 end
 
 function window:clear(color)
-    self.fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
+    self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
 ------------------------------------
