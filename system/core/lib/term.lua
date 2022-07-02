@@ -12,7 +12,15 @@ function window:new(screen, x, y, sizeX, sizeY)
     return obj
 end
 
+function window:clear()
+    
+end
+
 ------------------------------------
+
+function term.findGpu(screen)
+    
+end
 
 term.window = window
 
