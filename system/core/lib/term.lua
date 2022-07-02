@@ -35,18 +35,25 @@ function window:fill(x, y, sizeX, sizeY, background, foreground, char)
     self.gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
 end
 
+function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
+    self.gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
+end
+
 function window:clear(color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
+term.window = window
+
 ------------------------------------
 
+local screensSettings = {}
 function term.restoreScreenSettings(screen)
     
 end
 
 function term.saveScreenSettings(screen)
-    
+    local rx, ry = scr
 end
 
 function term.findGpu(screen)
@@ -76,7 +83,5 @@ function term.findGpu(screen)
         return gpu
     end
 end
-
-term.window = window
 
 return term
