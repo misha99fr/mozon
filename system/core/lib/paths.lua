@@ -1,3 +1,7 @@
+local unicode = require("unicode")
+
+------------------------------------
+
 local paths = {}
 
 function paths.segments(path)

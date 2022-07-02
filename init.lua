@@ -1,3 +1,5 @@
+--в ОС присутствует код из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
+
 do
     local bootaddress, invoke = computer.getBootAddress(), component.invoke
     local function raw_loadfile(path)
