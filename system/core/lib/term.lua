@@ -23,10 +23,16 @@ function window:new(screen, x, y, sizeX, sizeY)
     return obj
 end
 
+function window:set(x, y, background, foreground, text)
+    self.gpu.setBackground(background)
+    self.gpu.setForeground(foreground)
+    self.gpu.set(self.x + (x - 1), self.y + (y - 1), text)
+end
+
 function window:fill(x, y, sizeX, sizeY, background, foreground, char)
     self.gpu.setBackground(background)
-    self.gpu.setBackground(foreground)
-    self.gpu.fill(self.x + (x - 1), self.x + (y - 1), sizeX, sizeY, char)
+    self.gpu.setForeground(foreground)
+    self.gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
 end
 
 function window:clear(color)
