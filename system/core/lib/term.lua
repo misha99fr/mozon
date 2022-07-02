@@ -49,15 +49,6 @@ term.classWindow = window
 
 ------------------------------------
 
-local screensSettings = {}
-function term.restoreScreenSettings(screen)
-    
-end
-
-function term.saveScreenSettings(screen)
-    local rx, ry = 
-end
-
 function term.findGpu(screen)
     local deviceinfo = computer.getDeviceInfo()
     local screenLevel = deviceinfo[screen].capacity or 0
@@ -81,7 +72,6 @@ function term.findGpu(screen)
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
-        term.restoreScreenSettings(screen)
         return gpu
     end
 end
