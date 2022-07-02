@@ -12,4 +12,6 @@ do
         gpu = component.list("screen")()
     end
     gpu = component.proxy(gpu)
+    gpu.bind(screen)
 end
+
