@@ -16,7 +16,6 @@ function window:new(screen, x, y, sizeX, sizeY)
         y = y,
         sizeX = sizeX,
         sizeY = sizeY,
-        gpu = term.findGpu(screen),
     }
 
     setmetatable(obj, self)
@@ -24,26 +23,29 @@ function window:new(screen, x, y, sizeX, sizeY)
 end
 
 function window:set(x, y, background, foreground, text)
-    self.gpu.setBackground(background)
-    self.gpu.setForeground(foreground)
-    self.gpu.set(self.x + (x - 1), self.y + (y - 1), text)
+    local gpu = term.findGpu(self.screen)
+    gpu.setBackground(background)
+    gpu.setForeground(foreground)
+    gpu.set(self.x + (x - 1), self.y + (y - 1), text)
 end
 
 function window:fill(x, y, sizeX, sizeY, background, foreground, char)
-    self.gpu.setBackground(background)
-    self.gpu.setForeground(foreground)
-    self.gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
+    local gpu = term.findGpu(self.screen)
+    gpu.setBackground(background)
+    gpu.setForeground(foreground)
+    gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
 end
 
 function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
-    self.gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
+    local gpu = term.findGpu(self.screen)
+    gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
 end
 
 function window:clear(color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
-term.window = window
+term.classWindow = window
 
 ------------------------------------
 
@@ -53,7 +55,7 @@ function term.restoreScreenSettings(screen)
 end
 
 function term.saveScreenSettings(screen)
-    local rx, ry = scr
+    local rx, ry = 
 end
 
 function term.findGpu(screen)
