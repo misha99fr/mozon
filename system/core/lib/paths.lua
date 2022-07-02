@@ -74,7 +74,7 @@ function paths.name(path)
     return parts[#parts]
 end
 
---из mineOS от игоря тимофеева https://github.com/IgorTimofeev/MineOS
+--из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
 function paths.path(path)
 	return path:match("^(.+%/).") or "/"
 end
