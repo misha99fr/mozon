@@ -27,6 +27,7 @@ end
 local freeGpu = {}
 function term.findGpu(screen)
     local deviceinfo, gpu = computer.getDeviceInfo()
+    local screenCapacity = deviceinfo[screen].capacity
 
     while true do
         
