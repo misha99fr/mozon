@@ -1,7 +1,7 @@
 local raw_loadfile = ...
 
-local function dofile(path, ...)
-    assert(raw_loadfile(path))(...)
+local function dofile(path)
+    return assert(raw_loadfile(path))
 end
 
 do
