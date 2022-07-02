@@ -1,4 +1,5 @@
 local component = require("component")
+local computer = require("computer")
 local unicode = require("unicode")
 local paths = require("paths")
 
@@ -98,7 +99,8 @@ function filesystem.open(path, mode)
             read = function(...) return proxy.read(result, ...) end,
             write = function(...) return proxy.write(result, ...) end,
             close = function(...) return proxy.close(result, ...) end,
-            seek = function(...) return proxy.seek(result, ...) end
+            seek = function(...) return proxy.seek(result, ...) end,
+            handle = result,
 		}
 
         return handle
@@ -140,5 +142,7 @@ function filesystem.copy(fromPath, toPath)
 
 	copyRecursively(fromPath, toPath)
 end
+
+filesystem.mount("/", computer.getBootAddress())
 
 return filesystem
