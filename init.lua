@@ -8,6 +8,7 @@ do
         until not data
         return load(buffer, "=" .. path, "bt", _ENV)
     end
+    raw_loadfile("/system/core/boot.lua")
 end
 
 while true do
