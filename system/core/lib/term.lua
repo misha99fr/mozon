@@ -1,4 +1,5 @@
 local component = require("component")
+local unicode = require("unicode")
 
 ------------------------------------
 
@@ -16,8 +17,8 @@ function window:new(screen, x, y, sizeX, sizeY)
         y = y,
         sizeX = sizeX,
         sizeY = sizeY,
-        posX = 1,
-        posY = 1,
+        cursorX = 1,
+        cursorY = 1,
     }
 
     setmetatable(obj, self)
@@ -47,8 +48,12 @@ function window:clear(color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
-function window:write(color)
-    self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
+function window:write(data, background, foreground)
+    local gpu = term.findGpu(self.screen)
+    gpu.setBackground(background or 0)
+    gpu.setForeground(foreground or 0xFFFFFF)
+    
+    gpu.set(self.cursorX, self.cursorY, data)
 end
 
 term.classWindow = window
