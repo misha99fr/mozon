@@ -16,14 +16,21 @@ function window:new(screen, x, y, sizeX, sizeY)
         y = y,
         sizeX = sizeX,
         sizeY = sizeY,
+        gpu = term.findGpu(screen),
     }
 
     setmetatable(obj, self)
     return obj
 end
 
-function window:clear()
-    
+function window:fill(x, y, sizeX, sizeY, background, foreground, char)
+    self.gpu.setBackground(background)
+    self.gpu.setBackground(foreground)
+    self.gpu.fill(self.x + (x - 1), self.x + (y - 1), sizeX, sizeY, char)
+end
+
+function window:clear(color)
+    self.fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
 ------------------------------------
@@ -36,26 +43,32 @@ function term.saveScreenSettings(screen)
     
 end
 
-local freeGpu = {}
 function term.findGpu(screen)
-    local deviceinfo, bestGpu = computer.getDeviceInfo()
+    local deviceinfo = computer.getDeviceInfo()
     local screenLevel = deviceinfo[screen].capacity or 0
 
+    local gpuLevel, bestGpu, bestGpuLevel
     for address in component.list("gpu") do
-        while true do
-            local gpuLevel = deviceinfo[address].capacity or 0
-            if gpuLevel == screenLevel then
-                gpuLevel = gpuLevel + 1000
-            end
+        gpuLevel = deviceinfo[address].capacity or 0
+        if gpuLevel == screenLevel then
+            gpuLevel = gpuLevel + 1000
+        elseif gpuLevel > screenLevel then
+            gpuLevel = gpuLevel + 800
+        end
+        if gpuLevel > bestGpuLevel then
+            bestGpuLevel = gpuLevel
+            bestGpu = address
         end
     end
     
-    local gpu = component.proxy(bestGpu)
-    if gpu.getScreen() ~= screen then
-        gpu.bind(screen)
+    if bestGpu then
+        local gpu = component.proxy(bestGpu)
+        if gpu.getScreen() ~= screen then
+            gpu.bind(screen, false)
+        end
+        term.restoreScreenSettings(screen)
+        return gpu
     end
-    term.restoreScreenSettings(screen)
-    return gpu
 end
 
 term.window = window
