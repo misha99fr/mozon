@@ -1,3 +1,7 @@
+local component = require("component")
+
+------------------------------------
+
 local term = {}
 
 ------------------------------------class window
@@ -29,8 +33,11 @@ function term.findGpu(screen)
     local deviceinfo, gpu = computer.getDeviceInfo()
     local screenCapacity = deviceinfo[screen].capacity
 
-    while true do
+    for address in component.list() do
         
+    end
+    while true do
+        local gpuCapacity = deviceinfo[screen].capacity
     end
 
     return component.proxy(gpu)
