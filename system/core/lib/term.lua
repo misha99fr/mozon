@@ -56,6 +56,14 @@ function window:clear(color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
+function window:setCursor(x, y)
+    self.x, self.y = x, y
+end
+
+function window:getCursor()
+    return self.x, self.y
+end
+
 function window:write(data, background, foreground)
     local gpu = term.findGpu(self.screen)
     if gpu then
@@ -70,6 +78,33 @@ function window:write(data, background, foreground)
             else
                 gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
                 self.cursorX = self.cursorX + 1
+            end
+        end
+    end
+end
+
+function window:read(x, y, sizeX, sizeY, background, foreground)
+    local gpu = term.findGpu(self.screen)
+    local keyboards = component.invoke(self.screen, "getKeyboards")
+    if gpu then
+        gpu.setBackground(background)
+        gpu.setForeground(foreground)
+        gpu.fill(x, y, sizeX, sizeY, " ")
+    end
+    return function(...)
+        --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
+        --если функция чтото вернет, это результат, если он false значет было нажато ctrl+c
+        local eventData = {...}
+        if eventData[1] == "key_down" then
+            local ok
+            for i, v in ipairs(keyboards) do
+                if eventData[2] == v then
+                    ok = true
+                    break
+                end
+            end
+            if ok then
+                
             end
         end
     end
