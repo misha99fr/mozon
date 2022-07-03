@@ -10,7 +10,8 @@ package.createEnv = createEnv
 package.libsPaths = {"/system/core/lib"}
 package.loaded = {
     package = package,
-    filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
+    paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()),
+    filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv()),
 }
 
 function package.findLib(name)

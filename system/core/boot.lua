@@ -6,6 +6,10 @@ local component = component
 local computer = computer
 local unicode = unicode
 
+local function createEnv()
+    return setmetatable({_G = _G}, {__index = _G})
+end
+
 local function raw_dofile(path, mode, env, ...)
     return assert(raw_loadfile(path, mode, env))(...)
 end
@@ -27,9 +31,6 @@ do --оптимизация для computer.getDeviceInfo
 end
 
 do --package
-    local function createEnv()
-        return setmetatable({_G = _G}, {__index = _G})
-    end
     local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
 
     package.loaded.computer = computer
