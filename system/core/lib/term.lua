@@ -57,11 +57,11 @@ function window:clear(color)
 end
 
 function window:setCursor(x, y)
-    self.x, self.y = x, y
+    self.cursorX, self.cursorY = x, y
 end
 
 function window:getCursor()
-    return self.x, self.y
+    return self.cursorX, self.cursorY
 end
 
 function window:write(data, background, foreground)
@@ -85,23 +85,23 @@ end
 
 function window:read(x, y, sizeX, background, foreground)
     local keyboards = component.invoke(self.screen, "getKeyboards")
+    local buffer = ""
+    local function redraw()
+        local gpu = term.findGpu(self.screen)
+        if gpu then
+            gpu.setBackground(background)
+            gpu.setForeground(foreground)
+            local str = buffer .. "_"
+            --str = unicode.sub(buffer, num, unicode.len(buffer))
+            if unicode.len(str) < sizeX then
+                str = str .. string.rep(" ", sizeX - unicode.len(str))
+            end
+            gpu.set(self.x + (x - 1), self.y + (y - 1), str)
+        end
+    end
     return function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
-        local buffer = ""
-        local function redraw()
-            local gpu = term.findGpu(self.screen)
-            if gpu then
-                gpu.setBackground(background)
-                gpu.setForeground(foreground)
-                local str = buffer .. "_"
-                --str = unicode.sub(buffer, num, unicode.len(buffer))
-                if unicode.len(str) < sizeX then
-                    str = str .. string.rep(" ", sizeX - unicode.len(str))
-                end
-                gpu.set(self.x + (x - 1), self.y + (y - 1), str)
-            end
-        end
         if eventData[1] == "key_down" then
             local ok
             for i, v in ipairs(keyboards) do

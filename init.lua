@@ -14,4 +14,4 @@ do
 end
 
 local programs = require("programs")
-programs.load("shell")()
+assert(xpcall(assert(programs.load("shell")), debug.traceback))
