@@ -33,13 +33,8 @@ end
 do --package
     local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
 
-    package.loaded.computer = computer
-    package.loaded.component = component
-    package.loaded.unicode = unicode
-
     _G.computer = nil
     _G.component = nil
     _G.unicode = nil
 end
 
-----------------------------------

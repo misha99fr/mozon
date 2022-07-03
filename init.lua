@@ -5,7 +5,7 @@ do
     local function raw_loadfile(path, mode, env)
         local file, buffer = assert(invoke(bootaddress, "open", path, "rb")), ""
         repeat
-            local data = assert(invoke(bootaddress, "read", file, math.huge))
+            local data = invoke(bootaddress, "read", file, math.huge)
             buffer = buffer .. (data or "")
         until not data
         return load(buffer, "=" .. path, mode or "bt", env or _G)
