@@ -1,5 +1,0 @@
-local thread = {}
-
-
-
-return thread
