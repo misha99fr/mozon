@@ -161,5 +161,6 @@ function filesystem.copy(fromPath, toPath)
 end
 
 filesystem.mount(computer.getBootAddress(), "/")
+filesystem.mount(computer.tmpAddress(), "/tmp")
 
 return filesystem
