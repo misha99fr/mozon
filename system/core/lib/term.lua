@@ -84,7 +84,7 @@ function window:write(data, background, foreground)
     end
 end
 
-function window:read(x, y, sizeX, background, foreground)
+function window:read(x, y, sizeX, background, foreground, preStr)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = ""
     local function redraw()
@@ -92,18 +92,21 @@ function window:read(x, y, sizeX, background, foreground)
         if gpu then
             gpu.setBackground(background)
             gpu.setForeground(foreground)
-            local str = buffer .. "_"
+            local str = (preStr or "") .. buffer .. "_"
 
-            local num = unicode.len(buffer)
-            if num < 1 then num == 1 end
-            str = unicode.sub(buffer, num, unicode.len(buffer))
+            local num = (unicode.len(str) - sizeX) + 1
+            if num < 1 then num = 1 end
+            str = unicode.sub(str, num, unicode.len(str))
 
             if unicode.len(str) < sizeX then
                 str = str .. string.rep(" ", sizeX - unicode.len(str))
             end
+
             gpu.set(self.x + (x - 1), self.y + (y - 1), str)
         end
     end
+    redraw()
+
     return function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
