@@ -2,7 +2,6 @@ local raw_dofile, createEnv = ...
 local component = component
 local computer = computer
 local unicode = unicode
-local paths
 
 ------------------------------------
 
@@ -11,6 +10,7 @@ package.libsPaths = {"/system/core/lib"}
 
 function package.findLib(name)
     local fs = require("filesystem")
+    local paths = require("paths")
     local path = nil
 
     for i, v in ipairs(package.libsPaths) do
@@ -50,8 +50,8 @@ package.loaded.component = component
 package.loaded.computer = computer
 package.loaded.unicode = unicode
 
-paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv())
-package.loaded.paths = paths
+package.loaded.paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()) --подгрузить зарания во избежании проблемм
+package.loaded.calls = raw_dofile("/system/core/lib/calls.lua", nil, createEnv())
 package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
 
 raw_dofile = nil --чтобы навярника выгрузилось
