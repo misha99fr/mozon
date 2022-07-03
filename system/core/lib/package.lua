@@ -6,28 +6,24 @@ local unicode = unicode
 ------------------------------------
 
 local package = {}
-package.libsPaths = {"/system/core/lib"}
+package.paths = {"/system/core/lib"}
 package.loaded = {package = package}
 
-function package.findLib(name)
+function package.find(name)
     local fs = require("filesystem")
     local paths = require("paths")
-    local path = nil
 
-    for i, v in ipairs(package.libsPaths) do
-        local lpath = paths.concat(v, name .. ".lua")
-        if fs.exists(lpath) then
-            path = lpath
-            break
+    for i, v in ipairs(package.paths) do
+        local path = paths.concat(v, name .. ".lua")
+        if fs.exists(path) then
+            return path
         end
     end
-
-    return path
 end
 
 function _G.require(name)
     if not package.loaded[name] then
-        local finded = package.findLib(name)
+        local finded = package.find(name)
         if not finded then
             error("lib " .. name .. " is not found", 0)
         end
