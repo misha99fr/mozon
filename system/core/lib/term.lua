@@ -62,10 +62,15 @@ function window:write(data, background, foreground)
         gpu.setBackground(background or 0)
         gpu.setForeground(foreground or 0xFFFFFF)
 
-        for i, subdata in ipairs(calls.call("split", data, "\n")) do
-            gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), subdata)
-            self.cursorX = self.cursorX + unicode.len(subdata)
-            self.cursorY = self.cursorY + 1
+        for i = 1, unicode.len(data) do
+            local char = unicode.sub(data, i, i)
+            if char == "\n" then
+                self.cursorY = self.cursorY + 1
+                self.cursorX = self.cursorX + 1
+            else
+                gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
+                self.cursorX = self.cursorX + 1
+            end
         end
     end
 end
