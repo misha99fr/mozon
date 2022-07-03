@@ -105,6 +105,14 @@ function filesystem.open(path, mode)
             write = function(...) return proxy.write(result, ...) end,
             close = function(...) return proxy.close(result, ...) end,
             seek = function(...) return proxy.seek(result, ...) end,
+			readAll = function()
+				local buffer = ""
+				repeat
+					local data = proxy.read(result, math.huge)
+					buffer = buffer .. (data or "")
+				until not data
+				return buffer
+			end,
             handle = result,
 		}
 

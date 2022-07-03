@@ -38,3 +38,10 @@ do --package
     _G.unicode = nil
 end
 
+----------------------------------
+
+local windows = {}
+
+for address in component.list("screen") do
+
+end

@@ -27,21 +27,27 @@ end
 
 function window:set(x, y, background, foreground, text)
     local gpu = term.findGpu(self.screen)
-    gpu.setBackground(background)
-    gpu.setForeground(foreground)
-    gpu.set(self.x + (x - 1), self.y + (y - 1), text)
+    if gpu then
+        gpu.setBackground(background)
+        gpu.setForeground(foreground)
+        gpu.set(self.x + (x - 1), self.y + (y - 1), text)
+    end
 end
 
 function window:fill(x, y, sizeX, sizeY, background, foreground, char)
     local gpu = term.findGpu(self.screen)
-    gpu.setBackground(background)
-    gpu.setForeground(foreground)
-    gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
+    if gpu then
+        gpu.setBackground(background)
+        gpu.setForeground(foreground)
+        gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
+    end
 end
 
 function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
     local gpu = term.findGpu(self.screen)
-    gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
+    if gpu then
+        gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
+    end
 end
 
 function window:clear(color)
@@ -50,10 +56,11 @@ end
 
 function window:write(data, background, foreground)
     local gpu = term.findGpu(self.screen)
-    gpu.setBackground(background or 0)
-    gpu.setForeground(foreground or 0xFFFFFF)
-    
-    gpu.set(self.cursorX, self.cursorY, data)
+    if gpu then
+        gpu.setBackground(background or 0)
+        gpu.setForeground(foreground or 0xFFFFFF)
+        gpu.set(self.cursorX, self.cursorY, data)
+    end
 end
 
 term.classWindow = window
