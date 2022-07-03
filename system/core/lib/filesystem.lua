@@ -143,6 +143,6 @@ function filesystem.copy(fromPath, toPath)
 	copyRecursively(fromPath, toPath)
 end
 
-filesystem.mount("/", computer.getBootAddress())
+filesystem.mount(component.proxy(computer.getBootAddress()), "/")
 
 return filesystem
