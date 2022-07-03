@@ -25,15 +25,13 @@ end
 do --boot scripts
     local fs = require("filesystem")
     local paths = require("paths")
-    local calls = require("calls")
-    local createEnv = calls.load("createEnv")
 
     local path = "/system/core/boot"
     for i, v in ipairs(fs.list(path) or {}) do
         --component.proxy(component.list("gpu")()).set(1, 1, v)
         local full_path = paths.concat(path, v)
         if fs.exists(full_path) then
-            raw_dofile(full_path, nil, createEnv())
+            raw_dofile(full_path, nil, _G)
         end
     end
 end

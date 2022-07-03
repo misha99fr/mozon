@@ -1,6 +1,7 @@
 local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
+local calls = require("calls")
 
 ------------------------------------
 
@@ -60,7 +61,12 @@ function window:write(data, background, foreground)
     if gpu then
         gpu.setBackground(background or 0)
         gpu.setForeground(foreground or 0xFFFFFF)
-        gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), data)
+
+        for i, subdata in ipairs(calls.call("split", data, "\n")) do
+            gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), subdata)
+            self.cursorX = self.cursorX + unicode.len(subdata)
+            self.cursorY = self.cursorY + 1
+        end
     end
 end
 
