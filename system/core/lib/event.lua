@@ -16,12 +16,13 @@ function event.pull()
     
 end
 
-function event.push()
-    
-end
+event.push = computer.pushSingal
 
-function event.listen()
-    
+function event.listen(eventType, func)
+    checkArg(1, eventType, "string", "nil")
+    checkArg(2, func, "function")
+    table.insert(event.listens, {eventType = eventType, func = func, type = "l"})
+    return #event.listens
 end
 
 function event.timer(time, func, times)
@@ -30,6 +31,7 @@ function event.timer(time, func, times)
     checkArg(3, times, "number", "nil")
     table.insert(event.listens, {time = time, func = func, times = times or 1,
     type = "t", lastTime = computer.uptime()})
+    return #event.listens
 end
 
 local computer_pullSignal = computer.pullSignal
@@ -54,28 +56,42 @@ function computer.pullSignal(time)
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
 
+        local function runCallback(func, index)
+            local ok, err = pcall(func)
+            if ok then
+                if err == false then --таймер/слушатель хочет отключиться
+                    event.listens[index] = nil
+                end
+            else
+                event.tmpLog((err or "unknown error") .. "\n")
+            end
+        end
+
         for k, v in pairs(event.listens) do --нет ipairs неподайдет
             if v.type == "t" then
                 local uptime = computer.uptime() 
                 if uptime - v.lastTime >= v.time then
                     v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
-                    local ok, err = pcall(v.func)
-                    if ok then
-                        if err == false then --таймер хочем отключиться
-                            event.listens[k] = nil
-                        end
-                    else
-                        event.tmpLog((err or "unknown error") .. "\n")
-                    end
+                    runCallback(v.func, k)
                 end
             end
         end
 
         if #eventData > 0 then
-
+            for k, v in pairs(event.listens) do
+                if v.type == "l" then
+                    if not v.eventType or v.eventType == eventData[1] then
+                        runCallback(v.func, k)
+                    end
+                end
+            end
             return table.unpack(eventData)
         end
     end
+end
+
+function event.cancel(num)
+    event.listens[num] = nil
 end
 
 return event
