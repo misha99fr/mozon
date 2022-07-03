@@ -84,24 +84,22 @@ function window:write(data, background, foreground)
 end
 
 function window:read(x, y, sizeX, background, foreground)
-    local gpu = term.findGpu(self.screen)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     return function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
         local buffer = ""
         local function redraw()
+            local gpu = term.findGpu(self.screen)
             if gpu then
                 gpu.setBackground(background)
                 gpu.setForeground(foreground)
                 local str = buffer .. "_"
-                local num = (unicode.len(buffer) - sizeX) + 1
-                if num < 1 then num = 1 end
-                str = unicode.sub(buffer, num, unicode.len(buffer))
+                --str = unicode.sub(buffer, num, unicode.len(buffer))
                 if unicode.len(str) < sizeX then
                     str = str .. string.rep(" ", sizeX - unicode.len(str))
                 end
-                gpu.set(x, y, str)
+                gpu.set(self.x + (x - 1), self.y + (y - 1), str)
             end
         end
         if eventData[1] == "key_down" then
@@ -120,7 +118,7 @@ function window:read(x, y, sizeX, background, foreground)
                     redraw()
                 elseif eventData[4] == 14 then
                     if #buffer > 0 then
-                        buffer = buffer:sub(1, #buffer - 1)
+                        buffer = unicode.sub(buffer, 1, #buffer - 1)
                         redraw()
                     end
                 elseif eventData[4] == 46 then
