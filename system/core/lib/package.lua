@@ -5,14 +5,8 @@ local component = computer
 ------------------------------------
 
 local package = {}
-
-package.createEnv = createEnv
 package.libsPaths = {"/system/core/lib"}
-package.loaded = {
-    package = package,
-    paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()),
-    filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv()),
-}
+package.createEnv = createEnv
 
 function package.findLib(name)
     
@@ -21,5 +15,11 @@ end
 function _G.require(name)
     return package.loaded[name]
 end
+
+package.loaded = {
+    package = package,
+    paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()),
+    filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv()),
+}
 
 return package
