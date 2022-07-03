@@ -1,0 +1,1 @@
+return setmetatable({_G = _ENV}, {__index = _ENV})
