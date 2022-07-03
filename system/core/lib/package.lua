@@ -7,6 +7,7 @@ local unicode = unicode
 
 local package = {}
 package.libsPaths = {"/system/core/lib"}
+package.loaded = {package = package}
 
 function package.findLib(name)
     local fs = require("filesystem")
@@ -44,15 +45,13 @@ end
 
 ------------------------------------
 
-package.loaded = {package = package}
-
 package.loaded.component = component
 package.loaded.computer = computer
 package.loaded.unicode = unicode
 
 package.loaded.paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()) --подгрузить зарания во избежании проблемм
-package.loaded.calls = raw_dofile("/system/core/lib/calls.lua", nil, createEnv())
 package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
+package.loaded.calls = raw_dofile("/system/core/lib/calls.lua", nil, createEnv())
 
 raw_dofile = nil --чтобы навярника выгрузилось
 createEnv = nil

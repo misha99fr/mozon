@@ -10,5 +10,5 @@ do
         until not data
         return load(buffer, "=" .. path, mode or "bt", env or _G)
     end
-    xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile)
+    assert(xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile))
 end

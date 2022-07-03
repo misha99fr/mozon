@@ -1,3 +1,5 @@
+local computer = require("computer")
+
 do --оптимизация для computer.getDeviceInfo
     local computer_pullSignal = computer.pullSignal
     local deviceinfo = computer.getDeviceInfo()
