@@ -6,7 +6,7 @@ local component = component
 local computer = computer
 local unicode = unicode
 
-local function dofile(path, ...)
+local function dofile(path, mode, env, ...)
     return assert(raw_loadfile(path))(...)
 end
 

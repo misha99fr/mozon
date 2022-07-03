@@ -7,7 +7,7 @@ local component = computer
 local package = {}
 
 package.libsPaths = {"/system/core/lib"}
-package.loaded = {}
+package.loaded = {package = package}
 
 function _G.require(name)
     return package.loaded[name]
