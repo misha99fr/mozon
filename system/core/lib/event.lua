@@ -57,8 +57,8 @@ function computer.pullSignal(time)
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
 
-        local function runCallback(func, index)
-            local ok, err = pcall(func)
+        local function runCallback(func, index, ...)
+            local ok, err = pcall(func, ...)
             if ok then
                 if err == false then --таймер/слушатель хочет отключиться
                     event.listens[index] = nil
@@ -82,7 +82,7 @@ function computer.pullSignal(time)
             for k, v in pairs(event.listens) do
                 if v.type == "l" then
                     if not v.eventType or v.eventType == eventData[1] then
-                        runCallback(v.func, k)
+                        runCallback(v.func, k, table.unpack(eventData))
                     end
                 end
             end
