@@ -25,7 +25,17 @@ end
 local bWin1 = term.classWindow:new(blinkScreen, 1, 1, 25, 5)
 local bWin2 = term.classWindow:new(blinkScreen, 1, 7, 25, 5)
 
-event.timer(1, )
+local blink = false
+event.timer(1, function()
+    if blink then
+        bWin1.clear(0)
+        bWin2.clear(0xFFFFFF)
+    else
+        bWin1.clear(0xFFFFFF)
+        bWin2.clear(0)
+    end
+    blink = not blink
+end, math.huge)
 
 computer.beep(200)
 

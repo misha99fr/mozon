@@ -36,7 +36,7 @@ function event.timer(time, func, times)
 end
 
 local computer_pullSignal = computer.pullSignal
-function computer.pullSignal(time)
+function computer.pullSignal(time) --НАДА СДЕЛАТЬ рабочий times!! это переменная которая хранит количествой вызовов функции таймера
     time = time or math.huge
 
     local inTime = computer.uptime()

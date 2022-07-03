@@ -20,10 +20,11 @@ function filesystem.mount(proxy, path)
     path = paths.canonical(path)
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
-            return "another filesystem is already mounted here"
+            return nil, "another filesystem is already mounted here"
         end
     end
     table.insert(filesystem.mountList, {proxy, path})
+	return true
 end
 
 function filesystem.umount(path)
@@ -160,7 +161,7 @@ function filesystem.copy(fromPath, toPath)
 	copyRecursively(fromPath, toPath)
 end
 
-filesystem.mount(computer.getBootAddress(), "/")
-filesystem.mount(computer.tmpAddress(), "/tmp")
+assert(filesystem.mount(computer.getBootAddress(), "/"))
+assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
 
 return filesystem
