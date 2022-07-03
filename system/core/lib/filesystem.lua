@@ -9,6 +9,14 @@ local filesystem = {}
 filesystem.mountList = {}
 
 function filesystem.mount(proxy, path)
+	if type(proxy) == "string" then
+		local lproxy, err = component.proxy(proxy)
+		if not lproxy then
+			return nil, err
+		end
+		proxy = lproxy
+	end
+
     path = paths.canonical(path)
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
@@ -70,10 +78,7 @@ end
 
 function filesystem.list(path)
 	local proxy, proxyPath = filesystem.get(path)
-	
-	local list, reason = proxy.list(proxyPath)	
-	if list then return list end
-	return list, reason
+	return proxy.list(proxyPath)	
 end
 
 function filesystem.rename(fromPath, toPath)
@@ -143,6 +148,6 @@ function filesystem.copy(fromPath, toPath)
 	copyRecursively(fromPath, toPath)
 end
 
-filesystem.mount(component.proxy(computer.getBootAddress()), "/")
+filesystem.mount(computer.getBootAddress(), "/")
 
 return filesystem

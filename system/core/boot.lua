@@ -27,9 +27,10 @@ do --оптимизация для computer.getDeviceInfo
 end
 
 do --package
-    local package = raw_dofile("/system/core/lib/package.lua", nil, setmetatable({_G = _G}, {__index = _G}))
-    local filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, setmetatable({_G = _G}, {__index = _G}))
-    package.loaded.filesystem = filesystem
+    local function createEnv()
+        return setmetatable({_G = _G}, {__index = _G})
+    end
+    local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
 
     package.loaded.computer = computer
     package.loaded.component = component
