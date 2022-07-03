@@ -83,18 +83,25 @@ function window:write(data, background, foreground)
     end
 end
 
-function window:read(x, y, sizeX, sizeY, background, foreground)
+function window:read(x, y, sizeX, background, foreground)
     local gpu = term.findGpu(self.screen)
     local keyboards = component.invoke(self.screen, "getKeyboards")
-    if gpu then
-        gpu.setBackground(background)
-        gpu.setForeground(foreground)
-        gpu.fill(x, y, sizeX, sizeY, " ")
-    end
     return function(...)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он false значет было нажато ctrl+c
         local eventData = {...}
+        local buffer = ""
+        local function redraw()
+            if gpu then
+                gpu.setBackground(background)
+                gpu.setForeground(foreground)
+                local str = 
+                if unicode.len(str) < sizeX then
+                    str = str .. string.rep(" ", unicode.len(str) - sizeX)
+                end
+                gpu.set(x, y, str)
+            end
+        end
         if eventData[1] == "key_down" then
             local ok
             for i, v in ipairs(keyboards) do
@@ -104,7 +111,19 @@ function window:read(x, y, sizeX, sizeY, background, foreground)
                 end
             end
             if ok then
-                
+                if eventData[4] == 28 then
+                    return buffer
+                elseif eventData[3] >= 32 and eventData[3] <= 126 then
+                    buffer = buffer .. string.char(eventData[3])
+                    redraw()
+                elseif eventData[4] == 14 then
+                    if #buffer > 0 then
+                        buffer = buffer:sub(1, #buffer - 1)
+                        redraw()
+                    end
+                elseif eventData[4] == 46 then
+                    break --exit ctrl + c
+                end
             end
         end
     end
