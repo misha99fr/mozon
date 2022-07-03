@@ -93,7 +93,11 @@ function window:read(x, y, sizeX, background, foreground)
             gpu.setBackground(background)
             gpu.setForeground(foreground)
             local str = buffer .. "_"
-            --str = unicode.sub(buffer, num, unicode.len(buffer))
+
+            local num = unicode.len(buffer)
+            if num < 1 then num == 1 end
+            str = unicode.sub(buffer, num, unicode.len(buffer))
+
             if unicode.len(str) < sizeX then
                 str = str .. string.rep(" ", sizeX - unicode.len(str))
             end
@@ -136,7 +140,7 @@ term.classWindow = window
 
 local bindCache = {}
 function term.findGpu(screen)
-    if bindCache[screen] then return bindCache[screen] end
+    if bindCache[screen] and bindCache[screen].getScreen() == screen then return bindCache[screen] end
     local deviceinfo = computer.getDeviceInfo()
     local screenLevel = tonumber(deviceinfo[screen].capacity) or 0
 
