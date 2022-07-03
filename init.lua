@@ -12,7 +12,3 @@ do
     end
     assert(raw_loadfile("/system/core/boot.lua"))(raw_loadfile)
 end
-
-while true do
-    
-end

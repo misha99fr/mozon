@@ -1,4 +1,5 @@
 local component = require("component")
+local computer = require("computer")
 local unicode = require("unicode")
 
 ------------------------------------
@@ -69,11 +70,11 @@ term.classWindow = window
 
 function term.findGpu(screen)
     local deviceinfo = computer.getDeviceInfo()
-    local screenLevel = deviceinfo[screen].capacity or 0
+    local screenLevel = tonumber(deviceinfo[screen].capacity) or 0
 
-    local gpuLevel, bestGpu, bestGpuLevel
+    local bestGpuLevel, gpuLevel, bestGpu = 0
     for address in component.list("gpu") do
-        gpuLevel = deviceinfo[address].capacity or 0
+        gpuLevel = tonumber(deviceinfo[address].capacity) or 0
         if gpuLevel == screenLevel then
             gpuLevel = gpuLevel + 1000
         elseif gpuLevel > screenLevel then

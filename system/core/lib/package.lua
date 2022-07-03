@@ -12,7 +12,7 @@ package.createEnv = createEnv
 
 function package.findLib(name)
     local fs = require("filesystem")
-    local path
+    local path = nil
 
     for i, v in ipairs(package.libsPaths) do
         local lpath = paths.concat(v, name .. ".lua")
@@ -37,7 +37,7 @@ function _G.require(name)
         local data = file.readAll()
         file.close()
 
-        package.loaded[name] = data
+        package.loaded[name] = assert(load(data, "=" .. finded, nil, createEnv()))()
     end
     return package.loaded[name]
 end
@@ -53,6 +53,8 @@ package.loaded.unicode = unicode
 paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv())
 package.loaded.paths = paths
 package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
+
+raw_dofile = nil
 
 ------------------------------------
 

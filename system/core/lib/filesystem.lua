@@ -78,7 +78,11 @@ end
 
 function filesystem.list(path)
 	local proxy, proxyPath = filesystem.get(path)
-	return proxy.list(proxyPath)	
+	local tbl = proxy.list(proxyPath)
+	if tbl then
+		table.sort(tbl)
+	end
+	return tbl
 end
 
 function filesystem.rename(fromPath, toPath)
