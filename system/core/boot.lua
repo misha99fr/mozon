@@ -40,11 +40,11 @@ end
 
 ----------------------------------
 
+local windows = {}
 do
     local calls = require("calls")
     local graphicInit = calls.load("graphicInit")
 
-    local windows = {}
     for address in component.list("screen") do
         local term = require("term")
         local gpu = term.findGpu(address)

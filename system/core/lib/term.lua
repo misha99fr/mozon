@@ -60,7 +60,7 @@ function window:write(data, background, foreground)
     if gpu then
         gpu.setBackground(background or 0)
         gpu.setForeground(foreground or 0xFFFFFF)
-        gpu.set(self.cursorX, self.cursorY, data)
+        gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), data)
     end
 end
 
