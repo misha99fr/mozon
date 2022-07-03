@@ -86,10 +86,9 @@ end
 function window:read(x, y, sizeX, background, foreground)
     local gpu = term.findGpu(self.screen)
     local keyboards = component.invoke(self.screen, "getKeyboards")
-    return function(...)
+    return function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
-        local eventData = {...}
         local buffer = ""
         local function redraw()
             if gpu then

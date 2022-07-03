@@ -1,4 +1,5 @@
 local component = require("component")
+local computer = require("computer")
 local calls = require("calls")
 
 local windows = {}
@@ -28,7 +29,14 @@ end
 
 while true do
     local eventData = {computer.pullSignal()}
-    for i, v in ipairs(readers) do
-        
+    for i = #readers, 1, -1 do
+        local out = (readers[i])(eventData)
+        if out then
+            if out == true then
+                table.remove(readers, i)
+            else
+                computer.beep(out)
+            end
+        end
     end
 end
