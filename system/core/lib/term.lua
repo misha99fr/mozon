@@ -66,7 +66,7 @@ function window:write(data, background, foreground)
             local char = unicode.sub(data, i, i)
             if char == "\n" then
                 self.cursorY = self.cursorY + 1
-                self.cursorX = self.cursorX + 1
+                self.cursorX = 1
             else
                 gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
                 self.cursorX = self.cursorX + 1
