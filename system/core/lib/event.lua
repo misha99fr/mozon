@@ -1,4 +1,4 @@
-local event = require("event")
+local event = {}
 
 function event.pull()
     
