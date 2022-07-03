@@ -25,13 +25,13 @@ end
 do --boot scripts
     local fs = require("filesystem")
     local paths = require("paths")
-    local package = require("package")
+    local calls = require("calls")
 
     local path = "/system/core/boot"
     for i, v in ipairs(fs.list(path) or {}) do
         local full_path = paths.concat(path, v)
         if fs.exists(full_path) then
-            raw_dofile(full_path, nil, package.createEnv())
+            raw_dofile(full_path, nil, calls.call("createEnv"))
         end
     end
 end

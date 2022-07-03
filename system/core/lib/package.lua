@@ -8,7 +8,6 @@ local paths
 
 local package = {}
 package.libsPaths = {"/system/core/lib"}
-package.createEnv = createEnv
 
 function package.findLib(name)
     local fs = require("filesystem")
@@ -32,12 +31,13 @@ function _G.require(name)
             error("lib " .. name .. " is not found", 0)
         end
         local fs = require("filesystem")
+        local calls = require("calls")
 
         local file = assert(fs.open(finded, "rb"))
         local data = file.readAll()
         file.close()
 
-        package.loaded[name] = assert(load(data, "=" .. finded, nil, createEnv()))()
+        package.loaded[name] = assert(load(data, "=" .. finded, nil, calls.call("createEnv")))()
     end
     return package.loaded[name]
 end
@@ -54,7 +54,8 @@ paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv())
 package.loaded.paths = paths
 package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
 
-raw_dofile = nil
+raw_dofile = nil --чтобы навярника выгрузилось
+createEnv = nil
 
 ------------------------------------
 
