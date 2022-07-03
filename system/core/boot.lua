@@ -6,8 +6,8 @@ local component = component
 local computer = computer
 local unicode = unicode
 
-local function dofile(path)
-    return assert(raw_loadfile(path))
+local function dofile(path, ...)
+    return assert(raw_loadfile(path))(...)
 end
 
 do --оптимизация для computer.getDeviceInfo
@@ -27,12 +27,10 @@ do --оптимизация для computer.getDeviceInfo
 end
 
 do --package
+    local package = dofile("/system/core/lib/package.lua")
     local filesystem = dofile("/system/core/lib/filesystem.lua")
-    local package = dofile("/system/core/lib/package.lua", filesystem)
-
-    package.loaded.package = package
     package.loaded.filesystem = filesystem
-    
+
     package.loaded.computer = computer
     package.loaded.component = component
     package.loaded.unicode = unicode
