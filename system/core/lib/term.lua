@@ -1,6 +1,7 @@
 local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
+local event = require("event")
 local calls = require("calls")
 
 ------------------------------------
@@ -133,7 +134,9 @@ term.classWindow = window
 
 ------------------------------------
 
+local bindCache = {}
 function term.findGpu(screen)
+    if bindCache[screen] then return bindCache[screen] end
     local deviceinfo = computer.getDeviceInfo()
     local screenLevel = tonumber(deviceinfo[screen].capacity) or 0
 
@@ -156,8 +159,15 @@ function term.findGpu(screen)
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
+        bindCache[screen] = gpu
         return gpu
     end
 end
+
+event.listen(nil, function(eventType)
+    if eventType == "component_added" or eventType == "component_removed" then
+        bindCache = {} --да, тупо создаю новую табличьку
+    end
+end)
 
 return term

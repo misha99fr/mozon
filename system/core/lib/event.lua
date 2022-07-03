@@ -16,6 +16,7 @@ function event.pull()
     
 end
 
+event.pull = computer.pullSingal
 event.push = computer.pushSingal
 
 function event.listen(eventType, func)
