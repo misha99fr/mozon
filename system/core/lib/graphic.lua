@@ -150,10 +150,12 @@ function graphic.findGpu(screen)
     local bestGpuLevel, gpuLevel, bestGpu = 0
     for address in component.list("gpu") do
         gpuLevel = tonumber(deviceinfo[address].capacity) or 0
-        if gpuLevel == screenLevel then
-            gpuLevel = gpuLevel + 1000
+        if component.invoke(address, "getScreen") == screen then
+            gpuLevel = gpuLevel + 10000000
+        elseif gpuLevel == screenLevel then
+            gpuLevel = gpuLevel + 100000
         elseif gpuLevel > screenLevel then
-            gpuLevel = gpuLevel + 800
+            gpuLevel = gpuLevel + 80000
         end
         if gpuLevel > bestGpuLevel then
             bestGpuLevel = gpuLevel
@@ -171,8 +173,8 @@ function graphic.findGpu(screen)
     end
 end
 
-event.listen(nil, function(eventType)
-    if eventType == "component_added" or eventType == "component_removed" then
+event.listen(nil, function(eventType, _, ctype)
+    if (eventType == "component_added" or eventType == "component_removed") and (ctype == "filesystem" or ctype == "gpu") then
         bindCache = {} --да, тупо создаю новую табличьку
     end
 end)

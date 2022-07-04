@@ -27,13 +27,13 @@ local bWin1 = graphic.classWindow:new(blinkScreen, 1, 1, 25, 5)
 local bWin2 = graphic.classWindow:new(blinkScreen, 1, 7, 25, 5)
 
 local blink = false
-event.timer(1, function()
+event.timer(0.1, function()
     if blink then
-        bWin1.clear(0)
-        bWin2.clear(0xFFFFFF)
+        bWin1:clear(0)
+        bWin2:clear(0xFFFFFF)
     else
-        bWin1.clear(0xFFFFFF)
-        bWin2.clear(0)
+        bWin1:clear(0xFFFFFF)
+        bWin2:clear(0)
     end
     blink = not blink
 end, math.huge)
@@ -63,7 +63,8 @@ while true do
             if out == true then
                 table.remove(readers, i)
             else
-                computer.beep(out)
+                local speech = component.proxy(component.list("speech")())
+                speech.say(out)
             end
         end
     end
