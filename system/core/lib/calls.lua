@@ -23,12 +23,13 @@ function calls.find(name)
 end
 
 function calls.load(name)
-    local full_path = paths.concat("/system/core/calls", name .. ".lua")
-    if not fs.exists(full_path) then
-        return nil, "call " .. name .. " is not found"
-    end
+    if calls.loaded[name] then return calls.loaded[name] end
 
-    local file = assert(fs.open(full_path, "rb"))
+    local path = calls.find(name)
+    if not path then return nil, "no such call" end
+
+    local file = fs.open(path, "rb")
+    if not file then return nil, err end
     local data = file.readAll()
     file.close()
 

@@ -40,6 +40,9 @@ function _G.require(name)
 
         package.loaded[name] = assert(load(data, "=" .. finded, nil, calls.call("createEnv")))()
     end
+    if not package.loaded[name] then
+        error("lib " .. name .. " is not found" , 0)
+    end
     return package.loaded[name]
 end
 
