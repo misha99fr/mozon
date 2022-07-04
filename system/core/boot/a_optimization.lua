@@ -19,10 +19,14 @@ end
 
 do
     component.keyboards = {}
-    for address in component.list("screen") do
-        component.keyboards[address] = component.invoke(address, "getKeyboards")
-    end
     component.originalInvoke = component.invoke
+
+    function component.refreshKeyboard()
+        for address in component.list("screen") do
+            component.keyboards[address] = component.originalInvoke(address, "getKeyboards")
+        end
+    end
+    
     function component.invoke(address, method, ...)
         if component.type(address) == "screen" and method == "getKeyboards" then
             return component.keyboards[address]
