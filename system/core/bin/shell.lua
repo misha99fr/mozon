@@ -2,7 +2,7 @@ local component = require("component")
 local computer = require("computer")
 local calls = require("calls")
 local event = require("event")
-local term = require("term")
+local graphic = require("graphic")
 
 local blinkScreen = "d31ef4a4-0509-4099-8e8f-8c50bd00e3d9"
 
@@ -12,18 +12,18 @@ do
 
     for address in component.list("screen") do
         if address ~= blinkScreen then
-            local gpu = term.findGpu(address)
+            local gpu = graphic.findGpu(address)
             if gpu then
                 graphicInit(gpu)
-                table.insert(windows, term.classWindow:new(address, 1, 1, 25, 5))
-                table.insert(windows, term.classWindow:new(address, 1, 7, 25, 5))
+                table.insert(windows, graphic.classWindow:new(address, 1, 1, 25, 5))
+                table.insert(windows, graphic.classWindow:new(address, 1, 7, 25, 5))
             end
         end
     end
 end
 
-local bWin1 = term.classWindow:new(blinkScreen, 1, 1, 25, 5)
-local bWin2 = term.classWindow:new(blinkScreen, 1, 7, 25, 5)
+local bWin1 = graphic.classWindow:new(blinkScreen, 1, 1, 25, 5)
+local bWin2 = graphic.classWindow:new(blinkScreen, 1, 7, 25, 5)
 
 local blink = false
 event.timer(1, function()

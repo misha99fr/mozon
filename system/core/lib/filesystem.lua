@@ -47,6 +47,7 @@ function filesystem.get(path)
     end
 end
 
+--[[
 function filesystem.get(path)
 	path = paths.canonical(path)
 	for i = 1, #filesystem.mountList do
@@ -55,6 +56,7 @@ function filesystem.get(path)
 		end
 	end
 end
+]]
 
 function filesystem.exists(path)
 	local proxy, proxyPath = filesystem.get(path)

@@ -6,7 +6,7 @@ local calls = require("calls")
 
 ------------------------------------
 
-local term = {}
+local graphic = {}
 
 ------------------------------------class window
 
@@ -29,7 +29,7 @@ function window:new(screen, x, y, sizeX, sizeY)
 end
 
 function window:set(x, y, background, foreground, text)
-    local gpu = term.findGpu(self.screen)
+    local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background)
         gpu.setForeground(foreground)
@@ -38,7 +38,7 @@ function window:set(x, y, background, foreground, text)
 end
 
 function window:fill(x, y, sizeX, sizeY, background, foreground, char)
-    local gpu = term.findGpu(self.screen)
+    local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background)
         gpu.setForeground(foreground)
@@ -47,7 +47,7 @@ function window:fill(x, y, sizeX, sizeY, background, foreground, char)
 end
 
 function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
-    local gpu = term.findGpu(self.screen)
+    local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
     end
@@ -66,7 +66,7 @@ function window:getCursor()
 end
 
 function window:write(data, background, foreground)
-    local gpu = term.findGpu(self.screen)
+    local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background or 0)
         gpu.setForeground(foreground or 0xFFFFFF)
@@ -88,7 +88,7 @@ function window:read(x, y, sizeX, background, foreground, preStr)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = ""
     local function redraw()
-        local gpu = term.findGpu(self.screen)
+        local gpu = graphic.findGpu(self.screen)
         if gpu then
             gpu.setBackground(background)
             gpu.setForeground(foreground)
@@ -137,12 +137,12 @@ function window:read(x, y, sizeX, background, foreground, preStr)
     end
 end
 
-term.classWindow = window
+graphic.classWindow = window
 
 ------------------------------------
 
 local bindCache = {}
-function term.findGpu(screen)
+function graphic.findGpu(screen)
     if bindCache[screen] and bindCache[screen].getScreen() == screen then return bindCache[screen] end
     local deviceinfo = computer.getDeviceInfo()
     local screenLevel = tonumber(deviceinfo[screen].capacity) or 0
@@ -179,4 +179,4 @@ event.listen(nil, function(eventType)
     end
 end)
 
-return term
+return graphic
