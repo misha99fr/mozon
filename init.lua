@@ -12,3 +12,9 @@ do
     end
     assert(xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile))
 end
+
+local fs = require("filesystem")
+if fs.exists("/system/main.lua") then
+    local programs = require("programs")
+    assert(xpcall(assert(programs.load("/system/main.lua")), debug.traceback))
+end

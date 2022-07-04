@@ -87,7 +87,7 @@ function window:write(data, background, foreground)
 end
 
 function window:uploadEvent(eventData)
-    local newEventData
+    local newEventData = {} --пустая таблица, чтобы не чекать на nil
     if eventData then
         if eventData[2] == self.screen then
             if eventData[1] == "touch" or eventData[1] == "drop"
