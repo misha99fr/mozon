@@ -23,7 +23,6 @@ function event.pull()
     
 end
 
-event.pull = computer.pullSignal
 event.push = computer.pushSignal
 
 function event.listen(eventType, func)
@@ -109,5 +108,7 @@ end
 function event.cancel(num)
     event.listens[num] = nil
 end
+
+event.pull = computer.pullSignal
 
 return event
