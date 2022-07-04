@@ -44,12 +44,6 @@ function paths.xconcat(...) --работает как concat но пути на�
     return paths.canonical(table.concat(set, "/"))
 end
 
-function paths.exists(main, path)
-    main = paths.canonical(main) .. "/"
-    path = paths.canonical(path) .. "/"
-    return unicode.sub(path, 1, unicode.len(main)) == main
-end
-
 function paths.sconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет false
     main = paths.canonical(main) .. "/"
     local path = paths.concat(main, ...) .. "/"

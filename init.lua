@@ -12,6 +12,3 @@ do
     end
     assert(xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile))
 end
-
-local programs = require("programs")
-assert(xpcall(assert(programs.load("shell")), debug.traceback))
