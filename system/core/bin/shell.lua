@@ -43,7 +43,11 @@ computer.beep(200)
 
 local readers = {}
 for i, window in ipairs(windows) do
-    window:clear(0x0000FF)
+    window:clear(0xFFFFFF)
+    --[[
+    for i = 1, 0xFFFFFF, 0xFFFFFF / 256 do
+        window:clear(i)
+    end
     for i = 1, 2 do
         if windows.depth == 1 then
             window:write(tostring(i) .. "\n", 0, 0x00AAFF)
@@ -51,13 +55,8 @@ for i, window in ipairs(windows) do
             window:write(tostring(i) .. "\n", 0xFFFF00, 0x00AAFF)
         end
     end
+    ]]
 
-    local _, path = fs.get("/tmp/asd123123")
-    if windows.depth == 1 then
-        window:set(1, 1, 0, 0x00AAFF, path)
-    else
-        window:set(1, 1, 0xFF0000, 0x00AAFF, path)
-    end
     local cx, cy = window:getCursor()
     --window:set(1, 6, 0xFF0000, 0x00AAFF, tostring(cx))
     --window:set(4, 6, 0xFF0000, 0x00AAFF, tostring(cy))
