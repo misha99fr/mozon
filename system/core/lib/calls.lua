@@ -1,4 +1,5 @@
 local fs = require("filesystem")
+local unicode = require("unicode")
 local paths = require("paths")
 
 ------------------------------------
@@ -33,7 +34,7 @@ function calls.load(name)
     local data = file.readAll()
     file.close()
 
-    return assert(load(data, "=" .. full_path, nil, _G)) --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
+    return assert(load(data, "=" .. path, nil, _G)) --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
 end
 
 function calls.call(name, ...)

@@ -6,7 +6,8 @@ local component = component
 local computer = computer
 local unicode = unicode
 
-_G._OSVERSION = "likeOS (core)"
+_G.COREVERSION = "v1.0"
+_G._OSVERSION = "likeOS (core " .. _G.COREVERSION .. ")"
 
 local function createEnv()
     return setmetatable({_G = _G}, {__index = _G})

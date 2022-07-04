@@ -23,6 +23,8 @@ function window:new(screen, x, y, sizeX, sizeY)
         cursorX = 1,
         cursorY = 1,
     }
+    local gpu = graphic.findGpu(screen)
+    obj.selected = gpu and gpu.getDepth() == 1
 
     setmetatable(obj, self)
     return obj
@@ -82,6 +84,26 @@ function window:write(data, background, foreground)
             end
         end
     end
+end
+
+function window:uploadEvent(eventData)
+    local newEventData
+    if eventData and #eventData > 0 then
+        if eventData[2] == self.screen then
+            if eventData[1] == "touch" or eventData[1] == "drop"
+            or eventData[1] == "drag" or eventData[1] == "scroll" then
+                local rePosX = (self.x - eventData[3]) + 1
+                local rePosY = (self.y - eventData[4]) + 1
+                self.selected = false
+                if rePosX >= 1 and rePosY >= 1
+                and rePosX < (self.x + self.sizeX) and rePosY < (self.y + self.sizeY) then
+                    self.selected = true
+                    newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
+                end
+            end
+        end
+    end
+    return newEventData
 end
 
 function window:read(x, y, sizeX, background, foreground, preStr)
