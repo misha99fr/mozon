@@ -172,9 +172,7 @@ function graphic.findGpu(screen)
 end
 
 event.listen(nil, function(eventType)
-    computer.beep(2000)
     if eventType == "component_added" or eventType == "component_removed" then
-        computer.beep(1000)
         bindCache = {} --да, тупо создаю новую табличьку
     end
 end)

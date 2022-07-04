@@ -24,6 +24,9 @@ function filesystem.mount(proxy, path)
         end
     end
     table.insert(filesystem.mountList, {proxy, path})
+	table.sort(filesystem.mountList, function(a, b)
+		return unicode.len(a[2]) > unicode.len(b[2])
+	end)
 	return true
 end
 
