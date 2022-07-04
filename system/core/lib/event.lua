@@ -12,6 +12,13 @@ function event.tmpLog(data)
     file.close()
 end
 
+function event.sleep(time)
+    local inTime = computer.uptime()
+    repeat
+        computer.pullSignal(time - (computer.uptime() - inTime))
+    until computer.uptime() - inTime > time
+end
+
 function event.pull()
     
 end
