@@ -18,7 +18,7 @@ do
                 graphicInit(gpu)
                 table.insert(windows, graphic.classWindow:new(address, 1, 1, 25, 5))
                 table.insert(windows, graphic.classWindow:new(address, 1, 7, 25, 5))
-                windows.depth = component.invoke(address, "getDepth")
+                windows.depth = 1
             end
         end
     end

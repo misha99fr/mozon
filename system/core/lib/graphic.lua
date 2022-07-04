@@ -143,25 +143,32 @@ graphic.classWindow = window
 
 local bindCache = {}
 function graphic.findGpu(screen)
-    if bindCache[screen] and bindCache[screen].getScreen() == screen then return bindCache[screen] end
+    --от кеша слишком много проблемм, а findGpu и так довольно быстрая, за счет оптимизированого getDeviceInfo
+    --if bindCache[screen] and bindCache[screen].getScreen() == screen then return bindCache[screen] end
     local deviceinfo = computer.getDeviceInfo()
     local screenLevel = tonumber(deviceinfo[screen].capacity) or 0
 
     local bestGpuLevel, gpuLevel, bestGpu = 0
-    for address in component.list("gpu") do
-        gpuLevel = tonumber(deviceinfo[address].capacity) or 0
-        if component.invoke(address, "getScreen") == screen then
-            gpuLevel = gpuLevel + 10000000
-        elseif gpuLevel == screenLevel then
-            gpuLevel = gpuLevel + 100000
-        elseif gpuLevel > screenLevel then
-            gpuLevel = gpuLevel + 80000
-        end
-        if gpuLevel > bestGpuLevel then
-            bestGpuLevel = gpuLevel
-            bestGpu = address
+    local function check(deep)
+        for address in component.list("gpu") do
+            if deep or component.invoke(address, "getScreen") == screen then
+                gpuLevel = tonumber(deviceinfo[address].capacity) or 0
+                if component.invoke(address, "getScreen") == screen and gpuLevel == screenLevel then --уже подключенная видео карта, казырный туз, но только если она того же уровня что и монитор!
+                    gpuLevel = gpuLevel + 99999999999999999999
+                elseif gpuLevel == screenLevel then
+                    gpuLevel = gpuLevel + 999999999
+                elseif gpuLevel > screenLevel then
+                    gpuLevel = gpuLevel + 999999
+                end
+                if gpuLevel > bestGpuLevel then
+                    bestGpuLevel = gpuLevel
+                    bestGpu = address
+                end
+            end
         end
     end
+    check()
+    check(true)
     
     if bestGpu then
         local gpu = component.proxy(bestGpu)
