@@ -2,18 +2,12 @@ local computer = require("computer")
 local component = require("component")
 
 do --оптимизация для computer.getDeviceInfo
-    local computer_pullSignal = computer.pullSignal
-    local deviceinfo = computer.getDeviceInfo()
+    computer.originalGetDeviceInfo = computer.getDeviceInfo
+    local deviceinfo = computer.originalGetDeviceInfo()
 
+    computer.deviceinfo = deviceinfo
     function computer.getDeviceInfo()
         return deviceinfo
-    end
-    function computer.pullSignal(time)
-        local eventData = {computer_pullSignal(time)}
-        if eventData[1] == "component_added" or eventData[1] == "component_removed" then
-            deviceinfo = computer.getDeviceInfo()
-        end
-        return table.unpack(eventData)
     end
 end
 
@@ -23,9 +17,22 @@ do
 
     function component.refreshKeyboard()
         for address in component.list("screen") do
-            component.keyboards[address] = component.originalInvoke(address, "getKeyboards")
+            local newtbl = component.originalInvoke(address, "getKeyboards")
+            local keyboards = component.keyboards[address]
+            if keyboards then
+                for k, v in pairs(keyboards) do
+                    keyboards[k] = nil
+                end
+                for k, v in pairs(newtbl) do
+                    keyboards[k] = v
+                end
+                keyboards.n = #keyboards
+            else
+                component.keyboards[address] = newtbl
+            end
         end
     end
+    component.refreshKeyboard()
     
     function component.invoke(address, method, ...)
         if component.type(address) == "screen" and method == "getKeyboards" then
@@ -33,7 +40,7 @@ do
         else
             local eventData = {pcall(component.originalInvoke, address, method, ...)}
             if eventData[1] then
-                return table.unpack(eventData)
+                return table.unpack(eventData, 2)
             else
                 error(eventData[2], 0)
             end

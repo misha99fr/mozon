@@ -22,6 +22,17 @@ do --package
     _G.unicode = nil
 end
 
+local lastTime = computer.uptime() --удаляю лишнии эвенты
+while true do
+    local eventData = {computer.pullSignal(0.5)}
+    if eventData[1] == "component_added" or eventData[1] == "component_removed" then
+        lastTime = computer.uptime()
+    end
+    if computer.uptime() - lastTime > 1 then
+        break
+    end
+end
+
 do --boot scripts
     local fs = require("filesystem")
     local paths = require("paths")

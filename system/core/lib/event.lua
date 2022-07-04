@@ -73,7 +73,15 @@ function computer.pullSignal(time) --НАДА СДЕЛАТЬ рабочий time
                 local uptime = computer.uptime() 
                 if uptime - v.lastTime >= v.time then
                     v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
-                    runCallback(v.func, k)
+                    if v.times <= 0 then
+                        event.listens[k] = nil
+                    else
+                        runCallback(v.func, k)
+                        v.times = v.times - 1
+                        if v.times <= 0 then
+                            event.listens[k] = nil
+                        end
+                    end
                 end
             end
         end
