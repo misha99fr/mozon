@@ -6,17 +6,21 @@ local unicode = unicode
 ------------------------------------
 
 local package = {}
-package.paths = {"/system/core/lib"}
+package.paths = {"/system/core/lib", "/system/lib"}
 package.loaded = {package = package}
 
 function package.find(name)
-    local fs = require("filesystem")
-    local paths = require("paths")
+    if unicode.sub(name, 1, 1) == "/" then
+        return name
+    else
+        local fs = require("filesystem")
+        local paths = require("paths")
 
-    for i, v in ipairs(package.paths) do
-        local path = paths.concat(v, name .. ".lua")
-        if fs.exists(path) then
-            return path
+        for i, v in ipairs(package.paths) do
+            local path = paths.concat(v, name .. ".lua")
+            if fs.exists(path) then
+                return path
+            end
         end
     end
 end
