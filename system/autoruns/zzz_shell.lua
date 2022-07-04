@@ -69,8 +69,21 @@ end
 
 while true do
     local eventData = {computer.pullSignal()}
+    for i, v in ipairs(windows) do
+        local lEventData = v:uploadEvent(eventData)
+        if lEventData then
+            if lEventData[1] == "touch" then
+                v:set(lEventData[3], lEventData[4], 0xFF00FF, 0xFFFF00, "*")
+                computer.beep(2000, 0.001)
+            elseif lEventData[1] == "drag" then
+                v:set(lEventData[3], lEventData[4], 0xFF00FF, 0xFFFF00, "*")
+            elseif lEventData[1] == "drop" then
+                computer.beep(100, 0.2)
+            end
+        end
+    end
     for i = #readers, 1, -1 do
-        local out = (readers[i])(eventData)
+        local out = (readers[i]).uploadEvent(eventData)
         if out then
             if out == true then
                 table.remove(readers, i)

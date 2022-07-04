@@ -88,22 +88,35 @@ end
 
 function window:uploadEvent(eventData)
     local newEventData
-    if eventData and #eventData > 0 then
+    if eventData then
         if eventData[2] == self.screen then
             if eventData[1] == "touch" or eventData[1] == "drop"
             or eventData[1] == "drag" or eventData[1] == "scroll" then
-                local rePosX = (self.x - eventData[3]) + 1
-                local rePosY = (self.y - eventData[4]) + 1
+                local rePosX = (eventData[3] - self.x) + 1
+                local rePosY = (eventData[4] - self.y) + 1
                 self.selected = false
                 if rePosX >= 1 and rePosY >= 1
-                and rePosX < (self.x + self.sizeX) and rePosY < (self.y + self.sizeY) then
+                and rePosX <= self.sizeX and rePosY <= self.sizeY then
                     self.selected = true
                     newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
                 end
             end
+        elseif eventData[1] == "key_down" or eventData[1] == "key_up" or eventData[1] == "clipboard" then
+            local ok
+            for i, v in ipairs(component.invoke(self.screen, "getKeyboards")) do
+                if eventData[2] == v then
+                    ok = true
+                    break
+                end
+            end
+            if ok then
+                newEventData = eventData
+            end
         end
     end
-    return newEventData
+    if self.selected then
+        return newEventData
+    end
 end
 
 function window:read(x, y, sizeX, background, foreground, preStr)
@@ -129,7 +142,7 @@ function window:read(x, y, sizeX, background, foreground, preStr)
     end
     redraw()
 
-    return function(eventData)
+    return {uploadEvent = function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
         if eventData[1] == "key_down" then
@@ -140,7 +153,7 @@ function window:read(x, y, sizeX, background, foreground, preStr)
                     break
                 end
             end
-            if ok then
+            if ok and self.selected then
                 if eventData[4] == 28 then
                     return buffer
                 elseif eventData[3] >= 32 and eventData[3] <= 126 then
@@ -156,7 +169,7 @@ function window:read(x, y, sizeX, background, foreground, preStr)
                 end
             end
         end
-    end
+    end, redraw = redraw}
 end
 
 graphic.classWindow = window
