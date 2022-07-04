@@ -117,6 +117,7 @@ function window:uploadEvent(eventData)
     if self.selected then
         return newEventData
     end
+    return {}
 end
 
 function window:read(x, y, sizeX, background, foreground, preStr)

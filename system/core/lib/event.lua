@@ -16,8 +16,8 @@ function event.pull()
     
 end
 
-event.pull = computer.pullSingal
-event.push = computer.pushSingal
+event.pull = computer.pullSignal
+event.push = computer.pushSignal
 
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
