@@ -18,6 +18,7 @@ do
                 graphicInit(gpu)
                 table.insert(windows, graphic.classWindow:new(address, 1, 1, 25, 5))
                 table.insert(windows, graphic.classWindow:new(address, 1, 7, 25, 5))
+                windows.depth = component.invoke(address, "getDepth")
             end
         end
     end
@@ -44,15 +45,27 @@ local readers = {}
 for i, window in ipairs(windows) do
     window:clear(0x0000FF)
     for i = 1, 2 do
-        window:write(tostring(i) .. "\n", 0xFFFF00, 0x00AAFF)
+        if windows.depth == 1 then
+            window:write(tostring(i) .. "\n", 0, 0x00AAFF)
+        else
+            window:write(tostring(i) .. "\n", 0xFFFF00, 0x00AAFF)
+        end
     end
 
     local _, path = fs.get("/tmp/asd123123")
-    window:set(1, 1, 0xFF0000, 0x00AAFF, path)
+    if windows.depth == 1 then
+        window:set(1, 1, 0, 0x00AAFF, path)
+    else
+        window:set(1, 1, 0xFF0000, 0x00AAFF, path)
+    end
     local cx, cy = window:getCursor()
     --window:set(1, 6, 0xFF0000, 0x00AAFF, tostring(cx))
     --window:set(4, 6, 0xFF0000, 0x00AAFF, tostring(cy))
-    table.insert(readers, window:read(cx, cy, window.sizeX, 0xFF00FF, 0x00FF00))
+    if windows.depth == 1 then
+        table.insert(readers, window:read(cx, cy, window.sizeX, 0, 0x00FF00))
+    else
+        table.insert(readers, window:read(cx, cy, window.sizeX, 0xFF00FF, 0x00FF00))
+    end
 end
 
 while true do
