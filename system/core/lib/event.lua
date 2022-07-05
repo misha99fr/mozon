@@ -41,8 +41,15 @@ function event.timer(time, func, times)
     return #event.listens
 end
 
+event.interruptFlag = false
+
 local computer_pullSignal = computer.pullSignal
 function computer.pullSignal(time) --НАДА СДЕЛАТЬ рабочий times!! это переменная которая хранит количествой вызовов функции таймера
+    if event.interruptFlag then
+        event.interruptFlag = false
+        error("interrupted", 0)
+    end
+    
     time = time or math.huge
 
     local inTime = computer.uptime()
