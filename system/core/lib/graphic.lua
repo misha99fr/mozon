@@ -13,7 +13,7 @@ local graphic = {}
 local window = {}
 window.__index = window
 
-function window:new(screen, x, y, sizeX, sizeY)
+function window:new(screen, x, y, sizeX, sizeY, selected)
     local obj = {
         screen = screen,
         x = x,
@@ -23,8 +23,12 @@ function window:new(screen, x, y, sizeX, sizeY)
         cursorX = 1,
         cursorY = 1,
     }
-    local gpu = graphic.findGpu(screen)
-    obj.selected = gpu and gpu.getDepth() == 1
+    if selected ~= nil then
+        obj.selected = selected
+    else
+        local gpu = graphic.findGpu(screen)
+        obj.selected = gpu and gpu.getDepth() == 1
+    end
 
     setmetatable(obj, self)
     return obj
@@ -170,7 +174,9 @@ function window:read(x, y, sizeX, background, foreground, preStr)
                 end
             end
         end
-    end, redraw = redraw}
+    end, redraw = redraw, getBuffer = function()
+        return buffer
+    end}
 end
 
 graphic.classWindow = window
