@@ -36,4 +36,8 @@ function programs.load(name, mode, env)
     return code
 end
 
+function programs.execute(name, ...)
+    return pcall(assert(programs.load(name)), ...)
+end
+
 return programs

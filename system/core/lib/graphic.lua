@@ -124,7 +124,7 @@ function window:uploadEvent(eventData)
     return {}
 end
 
-function window:read(x, y, sizeX, background, foreground, preStr)
+function window:read(x, y, sizeX, background, foreground, preStr, crypto)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = ""
     local function redraw()
@@ -132,7 +132,12 @@ function window:read(x, y, sizeX, background, foreground, preStr)
         if gpu then
             gpu.setBackground(background)
             gpu.setForeground(foreground)
-            local str = (preStr or "") .. buffer .. "_"
+            local newBuffer = buffer
+            if crypto then
+                newBuffer = string.rep("*", unicode.len(crypto))
+            end
+            
+            local str = (preStr or "") .. newBuffer .. "_"
 
             local num = (unicode.len(str) - sizeX) + 1
             if num < 1 then num = 1 end
@@ -173,6 +178,10 @@ function window:read(x, y, sizeX, background, foreground, preStr)
                     return true --exit ctrl + c
                 end
             end
+        elseif eventData[1] == "clipboard" and not crypto then
+            buffer = buffer .. eventData[3]
+            redraw()
+            if buffer:byte(#buffer) == 13 then return buffer end
         end
     end, redraw = redraw, getBuffer = function()
         return buffer
