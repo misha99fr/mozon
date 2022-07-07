@@ -23,6 +23,8 @@ function event.pull()
     
 end
 
+event.push = computer.pushSignal
+
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
     checkArg(2, func, "function")
