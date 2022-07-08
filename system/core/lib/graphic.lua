@@ -192,7 +192,7 @@ graphic.classWindow = window
 
 ------------------------------------
 
-local bindCache = {}
+--local bindCache = {}
 function graphic.findGpu(screen)
     --от кеша слишком много проблемм, а findGpu и так довольно быстрая, за счет оптимизированого getDeviceInfo
     --if bindCache[screen] and bindCache[screen].getScreen() == screen then return bindCache[screen] end
@@ -231,10 +231,12 @@ function graphic.findGpu(screen)
     end
 end
 
+--[[
 event.listen(nil, function(eventType, _, ctype)
     if (eventType == "component_added" or eventType == "component_removed") and (ctype == "filesystem" or ctype == "gpu") then
         bindCache = {} --да, тупо создаю новую табличьку
     end
 end)
+]]
 
 return graphic
