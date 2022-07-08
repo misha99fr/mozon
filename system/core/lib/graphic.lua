@@ -124,6 +124,10 @@ function window:uploadEvent(eventData)
     return {}
 end
 
+function window:toRealPos(x, y)
+    return self.x + (x - 1), self.y + (y - 1)
+end
+
 function window:read(x, y, sizeX, background, foreground, preStr, crypto)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = ""
@@ -226,7 +230,7 @@ function graphic.findGpu(screen)
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
-        bindCache[screen] = gpu
+        --bindCache[screen] = gpu
         return gpu
     end
 end

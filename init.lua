@@ -35,6 +35,9 @@ do
     end
 
     if fs.exists("/system/main.lua") then
-        assert(xpcall(assert(programs.load("/system/main.lua")), debug.traceback))
+        local ok, err = xpcall(assert(programs.load("/system/main.lua")), debug.traceback)
+        if not ok then
+            error(err, 0)
+        end
     end
 end
