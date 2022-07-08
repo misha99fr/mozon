@@ -3,11 +3,13 @@ local fs = require("filesystem")
 
 ------------------------------------
 
+local computer_pullSignal = computer.pullSignal
+
 local event = {}
 event.listens = {}
 event.interruptFlag = false
+event.rawPullsignal = computer_pullSignal
 
-local computer_pullSignal = computer.pullSignal
 
 ------------------------------------
 
