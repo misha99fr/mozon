@@ -4,102 +4,102 @@ local readbit = calls.load("readbit")
 local values = {
     {
         [0] = 0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 255,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
     },
     {
         [0] = 1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 2,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 3,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 4,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 5,
-        1,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 6,
-        0,
-        1,
-        1,
-        0,
-        0,
-        0,
-        0,
-        0
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
     },
     {
         [0] = 127,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        0
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
     },
 }
 
@@ -113,8 +113,8 @@ for i, v in ipairs(values) do
             table.insert(errs,
                 "value " .. tostring(math.floor(v[0])) .. "\n" ..
                 "index " .. tostring(math.floor(i)) .. "\n" ..
-                "out " .. tostring(math.floor(out)) .. "\n" ..
-                "target " .. tostring(math.floor(v[i])) .. "\n" ..
+                "out " .. tostring(out) .. "\n" ..
+                "target " .. tostring(v[i]) .. "\n"
             )
             isErr = true
         end
