@@ -106,7 +106,17 @@ local values = {
 local okcount = 0
 
 for i, v in ipairs(values) do
-    
+    local isErr
+
+    for i = 1, 8 do
+        if readbit(v[0], i) ~= v[i] then
+            isErr = true
+        end
+    end
+
+    if not isErr then
+        okcount = okcount + 1
+    end
 end
 
 return okcount == #values

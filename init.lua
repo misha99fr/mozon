@@ -13,8 +13,28 @@ do
     assert(xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile))
 end
 
-local fs = require("filesystem")
-if fs.exists("/system/main.lua") then
+do
+    local fs = require("filesystem")
+    local paths = require("paths")
     local programs = require("programs")
-    assert(xpcall(assert(programs.load("/system/main.lua")), debug.traceback))
+
+    do
+        local function unittests(path)
+            for _, file in ipairs(fs.list(path) or {}) do
+                local lpath = paths.concat(path, file)
+                local ok, state = assert(programs.execute(lpath))
+                if not ok then
+                    error((state or "unknown error") .. " in unittest " .. file, 2)
+                elseif not state then
+                    error("завалин utittest " .. file, 2)
+                end
+            end
+        end
+        unittests("/system/core/unittests")
+        unittests("/system/unittests")
+    end
+
+    if fs.exists("/system/main.lua") then
+        assert(xpcall(assert(programs.load("/system/main.lua")), debug.traceback))
+    end
 end

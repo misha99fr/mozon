@@ -37,7 +37,9 @@ function programs.load(name, mode, env)
 end
 
 function programs.execute(name, ...)
-    return pcall(assert(programs.load(name)), ...)
+    local code, err = programs.load(name)
+    if not code then return nil, err end
+    return pcall(code, ...)
 end
 
 return programs
