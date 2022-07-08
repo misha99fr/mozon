@@ -103,13 +103,19 @@ local values = {
     },
 }
 
-local okcount = 0
-
+local okcount, errs = 0, {}
 for i, v in ipairs(values) do
     local isErr
 
     for i = 1, 8 do
-        if readbit(v[0], i) ~= v[i] then
+        local out = readbit(v[0], i)
+        if out ~= v[i] then
+            table.insert(errs,
+                "value " .. tostring(math.floor(v[0])) .. "\n" ..
+                "index " .. tostring(math.floor(i)) .. "\n" ..
+                "out " .. tostring(math.floor(out)) .. "\n" ..
+                "target " .. tostring(math.floor(v[i])) .. "\n" ..
+            )
             isErr = true
         end
     end
@@ -119,4 +125,4 @@ for i, v in ipairs(values) do
     end
 end
 
-return okcount == #values
+return okcount == #values, table.concat(errs, ", \n")

@@ -22,11 +22,11 @@ do
         local function unittests(path)
             for _, file in ipairs(fs.list(path) or {}) do
                 local lpath = paths.concat(path, file)
-                local ok, state = assert(programs.execute(lpath))
+                local ok, state, log = assert(programs.execute(lpath))
                 if not ok then
                     error((state or "unknown error") .. " in unittest " .. file, 0)
                 elseif not state then
-                    error("завалин utittest " .. file, 0)
+                    error("завалин utittest " .. file .. (log and (", log " .. log) or ""), 0)
                 end
             end
         end
