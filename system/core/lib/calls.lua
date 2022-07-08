@@ -29,12 +29,15 @@ function calls.load(name)
     local path = calls.find(name)
     if not path then return nil, "no such call" end
 
-    local file = fs.open(path, "rb")
+    local file, err = fs.open(path, "rb")
     if not file then return nil, err end
     local data = file.readAll()
     file.close()
 
-    return assert(load(data, "=" .. path, nil, _G)) --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
+    local code, err = load(data, "=" .. path, nil, _G)
+    if not code then return nil, err end
+
+    return code --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
 end
 
 function calls.call(name, ...)

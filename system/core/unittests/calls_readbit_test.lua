@@ -1,5 +1,11 @@
 local calls = require("calls")
-local readbit = calls.load("readbit")
+local readbit, err = calls.load("readbit")
+if not readbit then
+    return false, "failed to load readbit " .. (err or "unknown error")
+end
+if not pcall(readbit, 0, 2) then
+    return false, "failed to run readbit " .. (err or "unknown error")
+end
 
 local values = {
     {
@@ -108,13 +114,13 @@ for i, v in ipairs(values) do
     local isErr
 
     for i = 1, 8 do
-        local out = readbit(v[0], i)
+        local out = readbit(v[0], i - 1)
         if out ~= v[i] then
             table.insert(errs,
-                "value " .. tostring(math.floor(v[0])) .. "\n" ..
-                "index " .. tostring(math.floor(i)) .. "\n" ..
-                "out " .. tostring(out) .. "\n" ..
-                "target " .. tostring(v[i]) .. "\n"
+                "value " .. tostring(math.floor(v[0])) .. ", \n" ..
+                "index " .. tostring(math.floor(i)) .. ", \n" ..
+                "out " .. tostring(out) .. ", \n" ..
+                "target " .. tostring(v[i])
             )
             isErr = true
         end
@@ -125,4 +131,4 @@ for i, v in ipairs(values) do
     end
 end
 
-return okcount == #values, table.concat(errs, ", \n")
+return okcount == #values, table.concat(errs, ", \n\n")

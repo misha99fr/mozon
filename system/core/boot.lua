@@ -6,7 +6,7 @@ local component = component
 local computer = computer
 local unicode = unicode
 
-_G._COREVERSION = "v1.0"
+_G._COREVERSION = "v0.1"
 _G._COREVERSIONID = 1
 
 local function createEnv()

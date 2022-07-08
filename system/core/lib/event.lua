@@ -5,6 +5,11 @@ local fs = require("filesystem")
 
 local event = {}
 event.listens = {}
+event.interruptFlag = false
+
+local computer_pullSignal = computer.pullSignal
+
+------------------------------------
 
 function event.tmpLog(data)
     local file = assert(fs.open("/tmp/tmplog.log", "ab"))
@@ -18,12 +23,6 @@ function event.sleep(time)
         computer.pullSignal(time - (computer.uptime() - inTime))
     until computer.uptime() - inTime > time
 end
-
-function event.pull()
-    
-end
-
-event.push = computer.pushSignal
 
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
@@ -41,10 +40,11 @@ function event.timer(time, func, times)
     return #event.listens
 end
 
-event.interruptFlag = false
+function event.cancel(num)
+    event.listens[num] = nil
+end
 
-local computer_pullSignal = computer.pullSignal
-function computer.pullSignal(time) --НАДА СДЕЛАТЬ рабочий times!! это переменная которая хранит количествой вызовов функции таймера
+function computer.pullSignal(time)
     if event.interruptFlag then
         event.interruptFlag = false
         error("interrupted", 0)
@@ -112,10 +112,11 @@ function computer.pullSignal(time) --НАДА СДЕЛАТЬ рабочий time
     end
 end
 
-function event.cancel(num)
-    event.listens[num] = nil
-end
+event.push = computer.pushSignal
 
+function event.pull()
+    
+end
 event.pull = computer.pullSignal
 
 return event
