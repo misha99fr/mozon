@@ -24,9 +24,9 @@ do
                 local lpath = paths.concat(path, file)
                 local ok, state = assert(programs.execute(lpath))
                 if not ok then
-                    error((state or "unknown error") .. " in unittest " .. file, 2)
+                    error((state or "unknown error") .. " in unittest " .. file, 0)
                 elseif not state then
-                    error("завалин utittest " .. file, 2)
+                    error("завалин utittest " .. file, 0)
                 end
             end
         end
