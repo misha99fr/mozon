@@ -15,9 +15,16 @@ function programs.find(name)
         return name
     else
         for i, v in ipairs(programs.paths) do
-            local path = paths.concat(v, name .. ".lua")
-            if fs.exists(path) then
-                return path
+            local path = paths.concat(v, name)
+            if fs.exists(path .. ".lua") and not fs.isDirectory(path .. ".lua") then
+                return path .. ".lua"
+            else
+                if fs.exists(path) and fs.isDirectory(path) then
+                    path = paths.concat(path, "main.lua")
+                    if fs.exists(path) then
+                        return path
+                    end
+                end
             end
         end
     end
