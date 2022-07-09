@@ -61,27 +61,22 @@ end
 function event.callThreads(eventData)
     local thread = package.loaded.thread
     if thread then
-        local current = thread.current()
-        if not current then
-            local function find(tbl)
-                local parsetbl = tbl.childs
-                if not parsetbl then parsetbl = tbl end
-                for i = #parsetbl, 1, -1 do
-                    local v = parsetbl[i]
-                    if not v.thread then
-                        table.remove(parsetbl, i)
-                    else
-                        --computer.beep(2000, 0.1)
-                        assert(coroutine.resume(v.thread, table.unpack(v.args or eventData)))
-                        v.args = nil
-                        find(v)
-                    end
+        local function find(tbl)
+            local parsetbl = tbl.childs
+            if not parsetbl then parsetbl = tbl end
+            for i = #parsetbl, 1, -1 do
+                local v = parsetbl[i]
+                if not v.thread then
+                    table.remove(parsetbl, i)
+                else
+                    --computer.beep(2000, 0.1)
+                    assert(coroutine.resume(v.thread, table.unpack(v.args or eventData)))
+                    v.args = nil
+                    find(v)
                 end
             end
-            find(thread.threads)
-        else
-            coroutine.yield()
         end
+        find(thread.threads)
     end
 end
 
@@ -90,9 +85,16 @@ function computer.pullSignal(time)
         event.interruptFlag = false
         error("interrupted", 0)
     end
-
     time = time or math.huge
-
+    
+    local thread = package.loaded.thread
+    if thread then
+        local current = thread.current()
+        if current then
+            return computer_pullSignal(time)
+        end
+    end
+    
     local inTime = computer.uptime()
     while true do
         local ltime = time - (computer.uptime() - inTime)
