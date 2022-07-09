@@ -133,7 +133,26 @@ end
 event.pull = computer.pullSignal
 
 event.timer(1, function()
-    
+    local thread = package.loaded.thread
+    if thread then
+        if thread.current() == thread.mainthread then
+            local function find(tbl)
+                local parsetbl = tbl.childs
+                if not parsetbl then parsetbl = tbl end
+                for i = #parsetbl, 1, -1 do
+                    local v = parsetbl[i]
+                    if not v.thread then
+                        table.remove(parsetbl, i)
+                    else
+                        coroutine.resume(v.thread, v.args)
+                        v.args = nil
+                        find(v)
+                    end
+                end
+            end
+            find(thread.threads)
+        end
+    end
 end, math.huge)
 
 return event

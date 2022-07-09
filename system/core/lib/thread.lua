@@ -4,6 +4,7 @@ local event = require("event")
 
 local thread = {}
 thread.threads = {}
+thread.mainthread = coroutine.running()
 
 function thread.current()
     local currentT = coroutine.running()
