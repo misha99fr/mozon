@@ -1,6 +1,7 @@
 local fs = require("filesystem")
 local unicode = require("unicode")
 local paths = require("paths")
+local package = require("package")
 local calls = require("calls")
 
 ------------------------------------
@@ -39,7 +40,16 @@ end
 function programs.execute(name, ...)
     local code, err = programs.load(name)
     if not code then return nil, err end
-    return pcall(code, ...)
+
+    local thread = package.loaded.thread
+    if not thread then
+        return pcall(code, ...)
+    else
+        local t = thread.create(code, ...)
+        t:resume() --потому что по умолчанию поток спит
+        while t:status() ~= "dead" do event.sleep(0.2) end
+        return table.unpack(t.out or {true})
+    end
 end
 
 return programs

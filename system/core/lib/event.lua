@@ -66,11 +66,11 @@ function event.callThreads(eventData)
             if not parsetbl then parsetbl = tbl end
             for i = #parsetbl, 1, -1 do
                 local v = parsetbl[i]
-                if not v.thread then
+                if not v.thread or coroutine.status(v.thread) == "dead" then
                     table.remove(parsetbl, i)
                 else
                     --computer.beep(2000, 0.1)
-                    assert(coroutine.resume(v.thread, table.unpack(v.args or eventData)))
+                    v.out = {coroutine.resume(v.thread, table.unpack(v.args or eventData))}
                     v.args = nil
                     find(v)
                 end
@@ -111,7 +111,7 @@ function computer.pullSignal(time)
             end
         end
 
-        local eventData = {computer_pullSignal(0.1)} --обязательно повисеть в pullSignal
+        local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
         event.callThreads(eventData)
 
         local function runCallback(func, index, ...)
@@ -162,9 +162,5 @@ function event.pull()
     
 end
 event.pull = computer.pullSignal
-
-event.timer(0.1, function()
-    
-end, math.huge)
 
 return event

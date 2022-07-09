@@ -50,7 +50,8 @@ function thread.create(func, ...)
         raw_kill = raw_kill,
         kill = kill,
         resume = resume,
-        suspend = suspend
+        suspend = suspend,
+        status = status
     }
     thread.attachThread(obj)
     return obj
@@ -73,5 +74,15 @@ end
 function suspend(t)
     t.enable = false
 end
+
+function status(t)
+    return coroutine.status(t)
+end
+
+------------------------------------кстыли
+
+event.timer(0.1, function() --сокрашяет время физического висения в pullSignal до 0.1
+    
+end, math.huge)
 
 return thread
