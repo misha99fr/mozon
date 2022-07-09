@@ -93,27 +93,26 @@ end
 function window:uploadEvent(eventData)
     local newEventData = {} --пустая таблица, чтобы не чекать на nil
     if eventData then
-        if eventData[2] == self.screen then
-            if eventData[1] == "touch" or eventData[1] == "drop" or eventData[1] == "drag" or eventData[1] == "scroll" then
-                local rePosX = (eventData[3] - self.x) + 1
-                local rePosY = (eventData[4] - self.y) + 1
-                self.selected = false
-                if rePosX >= 1 and rePosY >= 1
-                and rePosX <= self.sizeX and rePosY <= self.sizeY then
-                    self.selected = true
-                    newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
+        if eventData[2] == self.screen and
+        (eventData[1] == "touch" or eventData[1] == "drop" or eventData[1] == "drag" or eventData[1] == "scroll") then
+            local rePosX = (eventData[3] - self.x) + 1
+            local rePosY = (eventData[4] - self.y) + 1
+            self.selected = false
+            if rePosX >= 1 and rePosY >= 1
+            and rePosX <= self.sizeX and rePosY <= self.sizeY then
+                self.selected = true
+                newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
+            end
+        elseif eventData[1] == "key_down" or eventData[1] == "key_up" or eventData[1] == "clipboard" then
+            local ok
+            for i, v in ipairs(component.invoke(self.screen, "getKeyboards")) do
+                if eventData[2] == v then
+                    ok = true
+                    break
                 end
-            elseif eventData[1] == "key_down" or eventData[1] == "key_up" or eventData[1] == "clipboard" then
-                local ok
-                for i, v in ipairs(component.invoke(self.screen, "getKeyboards")) do
-                    if eventData[2] == v then
-                        ok = true
-                        break
-                    end
-                end
-                if ok then
-                    newEventData = eventData
-                end
+            end
+            if ok then
+                newEventData = eventData
             end
         end
     end
