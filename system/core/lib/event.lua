@@ -26,7 +26,7 @@ event.interruptFlag = false
 ------------------------------------
 
 function event.tmpLog(data)
-    local file = assert(fs.open("/tmp/tmplog.log", "ab"))
+    local file = assert(fs.open("/tmplog.log", "ab"))
     file.write(data .. "\n")
     file.close()
 end
