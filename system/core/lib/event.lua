@@ -6,7 +6,7 @@ local package = require("package")
 
 local raw_computer_pullSignal = computer.pullSignal
 local computer_pullSignal = function(time)
-    if package.loaded.thread then
+    if package.loaded.thread and package.loaded.thread.current() then
         local inTime = computer.uptime()
         repeat
             local eventData = {coroutine.yield()}
@@ -111,7 +111,7 @@ function computer.pullSignal(time)
             end
         end
 
-        local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
+        local eventData = {computer_pullSignal(0.1)} --обязательно повисеть в pullSignal
         event.callThreads(eventData)
 
         local function runCallback(func, index, ...)
