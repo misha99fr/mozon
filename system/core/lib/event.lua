@@ -6,7 +6,7 @@ local package = require("package")
 
 local raw_computer_pullSignal = computer.pullSignal
 local computer_pullSignal = function(time)
-    if package.loaded.thread and false then
+    if package.loaded.thread then
         local inTime = computer.uptime()
         repeat
             local eventData = {coroutine.yield()}
@@ -58,7 +58,7 @@ function event.cancel(num)
     event.listens[num] = nil
 end
 
-function event.callThreads()
+function event.callThreads(eventData)
     local thread = package.loaded.thread
     if thread then
         local current = thread.current()
@@ -72,7 +72,7 @@ function event.callThreads()
                         table.remove(parsetbl, i)
                     else
                         --computer.beep(2000, 0.1)
-                        assert(coroutine.resume(v.thread, table.unpack(v.args or {})))
+                        assert(coroutine.resume(v.thread, table.unpack(v.args or eventData)))
                         v.args = nil
                         find(v)
                     end
@@ -110,7 +110,7 @@ function computer.pullSignal(time)
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
-        event.callThreads()
+        event.callThreads(eventData)
 
         local function runCallback(func, index, ...)
             local ok, err = pcall(func, ...)
