@@ -8,19 +8,15 @@ thread.threads = {}
 function thread.current()
     local currentT = coroutine.running()
     local function find(tbl)
-        if tbl == thread.threads then
-            for i, v in ipairs(tbl) do
-                if v.thread == currentT then
-                    return v
-                else
-                    local obj = find(v)
-                    if obj then
-                        return obj
-                    end
-                end
-            end
-        else
-            for i, v in ipairs(tbl.childs) do
+        local parsetbl = tbl.childs
+        if not parsetbl then
+            parsetbl = tbl
+        end
+        for i = #parsetbl, 1, -1 do
+            local v = parsetbl[i]
+            if not v.thread then
+                table.remove(parsetbl, i)
+            else
                 if v.thread == currentT then
                     return v
                 else
@@ -57,7 +53,7 @@ end
 ------------------------------------thread functions
 
 function raw_kill(t) --не стоит убивать паток сырым kill
-    t.killed = true
+    t.thread = nil
 end
 
 function kill(t) --вы сможете переопределить это в своем потоке, наример чтобы закрыть таймеры
