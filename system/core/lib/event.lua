@@ -4,8 +4,9 @@ local package = require("package")
 
 ------------------------------------
 
+local raw_computer_pullSignal = computer.pullSignal
 local computer_pullSignal = function(time)
-    if package.loaded.thread then
+    if package.loaded.thread and false then
         local inTime = computer.uptime()
         repeat
             local eventData = {coroutine.yield()}
@@ -14,7 +15,7 @@ local computer_pullSignal = function(time)
             end
         until computer.uptime() - inTime > time
     else
-        return computer.pullSignal(time)
+        return raw_computer_pullSignal(time)
     end
 end
 
@@ -57,6 +58,31 @@ function event.cancel(num)
     event.listens[num] = nil
 end
 
+local function callThreads()
+    local thread = package.loaded.thread
+    if thread then
+        if thread.current() == thread.mainthread then
+            local function find(tbl)
+                local parsetbl = tbl.childs
+                if not parsetbl then parsetbl = tbl end
+                for i = #parsetbl, 1, -1 do
+                    local v = parsetbl[i]
+                    if not v.thread then
+                        table.remove(parsetbl, i)
+                    else
+                        coroutine.resume(v.thread, v.args)
+                        v.args = nil
+                        find(v)
+                    end
+                end
+            end
+            find(thread.threads)
+        else
+            coroutine.yield()
+        end
+    end
+end
+
 function computer.pullSignal(time)
     if event.interruptFlag then
         event.interruptFlag = false
@@ -82,6 +108,7 @@ function computer.pullSignal(time)
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
+        callThreads()
 
         local function runCallback(func, index, ...)
             local ok, err = pcall(func, ...)
@@ -133,26 +160,7 @@ end
 event.pull = computer.pullSignal
 
 event.timer(1, function()
-    local thread = package.loaded.thread
-    if thread then
-        if thread.current() == thread.mainthread then
-            local function find(tbl)
-                local parsetbl = tbl.childs
-                if not parsetbl then parsetbl = tbl end
-                for i = #parsetbl, 1, -1 do
-                    local v = parsetbl[i]
-                    if not v.thread then
-                        table.remove(parsetbl, i)
-                    else
-                        coroutine.resume(v.thread, v.args)
-                        v.args = nil
-                        find(v)
-                    end
-                end
-            end
-            find(thread.threads)
-        end
-    end
+    
 end, math.huge)
 
 return event

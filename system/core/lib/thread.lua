@@ -44,9 +44,16 @@ end
 
 function thread.create(func, ...)
     local t = coroutine.create(func, ...)
-    local obj = 
-    {thread = t, enable = false, args = {...},
-    raw_kill, kill, childs = {}}
+    local obj = {
+        args = {...},
+        childs = {},
+        thread = t,
+        enable = false,
+        raw_kill = raw_kill,
+        kill = kill,
+        resume = resume,
+        suspend = suspend
+    }
     thread.attachThread(obj)
     return obj
 end
