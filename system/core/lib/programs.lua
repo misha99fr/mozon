@@ -3,6 +3,7 @@ local unicode = require("unicode")
 local paths = require("paths")
 local package = require("package")
 local calls = require("calls")
+local event = require("event")
 
 ------------------------------------
 
