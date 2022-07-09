@@ -76,6 +76,7 @@ function suspend(t)
 end
 
 function status(t)
+    if not t.thread then return "dead" end
     return coroutine.status(t.thread)
 end
 

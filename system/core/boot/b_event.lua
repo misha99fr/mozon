@@ -9,7 +9,6 @@ event.listen(nil, function(eventType, uuid, ctype)
             event.cancel(timer)
         end
         timer = event.timer(1, function()
-            computer.beep(2000)
             timer = nil
             computer.deviceinfo = computer.originalGetDeviceInfo()
             if isKeyboard then

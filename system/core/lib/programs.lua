@@ -48,7 +48,7 @@ function programs.execute(name, ...)
     else
         local t = thread.create(code, ...)
         t:resume() --потому что по умолчанию поток спит
-        while t:status() ~= "dead" do event.sleep(1) end
+        while t:status() ~= "dead" do event.sleep(0.1) end
         return table.unpack(t.out or {true})
     end
 end

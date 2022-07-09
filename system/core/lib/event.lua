@@ -22,6 +22,7 @@ end
 local event = {}
 event.listens = {}
 event.interruptFlag = false
+event.isListen = false --если текуший код timer/listen
 
 ------------------------------------
 
@@ -55,7 +56,10 @@ function event.timer(time, func, times)
 end
 
 function event.cancel(num)
+    local ok = not not event.listens[num]
+    event.listens[num].killed = true
     event.listens[num] = nil
+    return ok
 end
 
 function event.callThreads(eventData)
@@ -103,7 +107,7 @@ function computer.pullSignal(time)
 
         --поиск времени до первого таймера, что обязательно на него успеть
         for k, v in pairs(event.listens) do --нет ipairs неподайдет
-            if v.type == "t" then
+            if v.type == "t" and not v.killed then
                 local timerTime = v.time - (computer.uptime() - v.lastTime)
                 if timerTime < realtime then
                     realtime = timerTime
@@ -112,10 +116,14 @@ function computer.pullSignal(time)
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
-        event.callThreads(eventData)
+        if not event.isListen then
+            event.callThreads(eventData)
+        end
 
         local function runCallback(func, index, ...)
+            event.isListen = true
             local ok, err = pcall(func, ...)
+            event.isListen = false
             if ok then
                 if err == false then --таймер/слушатель хочет отключиться
                     event.listens[index] = nil
@@ -126,7 +134,7 @@ function computer.pullSignal(time)
         end
 
         for k, v in pairs(event.listens) do --нет ipairs неподайдет
-            if v.type == "t" then
+            if v.type == "t" and not v.killed then
                 local uptime = computer.uptime() 
                 if uptime - v.lastTime >= v.time then
                     v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
@@ -145,7 +153,7 @@ function computer.pullSignal(time)
 
         if #eventData > 0 then
             for k, v in pairs(event.listens) do
-                if v.type == "l" then
+                if v.type == "l" and not v.killed then
                     if not v.eventType or v.eventType == eventData[1] then
                         runCallback(v.func, k, table.unpack(eventData))
                     end
