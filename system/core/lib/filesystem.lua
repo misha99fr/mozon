@@ -23,6 +23,7 @@ function filesystem.mount(proxy, path)
             return nil, "another filesystem is already mounted here"
         end
     end
+	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     table.insert(filesystem.mountList, {proxy, path})
 	table.sort(filesystem.mountList, function(a, b)
 		return unicode.len(a[2]) > unicode.len(b[2])
@@ -43,8 +44,9 @@ end
 
 function filesystem.get(path)
     path = paths.canonical(path)
+	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     for i = 1, #filesystem.mountList do
-        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == filesystem.mountList[i][2] then
+        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == (filesystem.mountList[i][2]) then
             return filesystem.mountList[i][1], unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, -1)
         end
     end

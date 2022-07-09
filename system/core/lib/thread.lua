@@ -76,7 +76,7 @@ function suspend(t)
 end
 
 function status(t)
-    return coroutine.status(t)
+    return coroutine.status(t.thread)
 end
 
 ------------------------------------кстыли
