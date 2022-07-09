@@ -1,15 +1,26 @@
 local computer = require("computer")
 local fs = require("filesystem")
+local package = require("package")
 
 ------------------------------------
 
-local computer_pullSignal = computer.pullSignal
+local computer_pullSignal = function(time)
+    if package.loaded.thread then
+        local inTime = computer.uptime()
+        repeat
+            local eventData = {coroutine.yield()}
+            if #eventData > 0 then
+                return table.unpack(eventData)
+            end
+        until computer.uptime() - inTime > time
+    else
+        return computer.pullSignal(time)
+    end
+end
 
 local event = {}
 event.listens = {}
 event.interruptFlag = false
-event.rawPullsignal = computer_pullSignal
-
 
 ------------------------------------
 
@@ -51,7 +62,7 @@ function computer.pullSignal(time)
         event.interruptFlag = false
         error("interrupted", 0)
     end
-    
+
     time = time or math.huge
 
     local inTime = computer.uptime()
@@ -120,5 +131,9 @@ function event.pull()
     
 end
 event.pull = computer.pullSignal
+
+event.timer(1, function()
+    
+end, math.huge)
 
 return event
