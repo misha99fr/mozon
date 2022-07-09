@@ -10,9 +10,7 @@ function thread.current()
     local currentT = coroutine.running()
     local function find(tbl)
         local parsetbl = tbl.childs
-        if not parsetbl then
-            parsetbl = tbl
-        end
+        if not parsetbl then parsetbl = tbl end
         for i = #parsetbl, 1, -1 do
             local v = parsetbl[i]
             if not v.thread then

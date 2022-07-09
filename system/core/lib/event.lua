@@ -58,10 +58,11 @@ function event.cancel(num)
     event.listens[num] = nil
 end
 
-local function callThreads()
+function event.callThreads()
     local thread = package.loaded.thread
     if thread then
-        if thread.current() == thread.mainthread then
+        local current = thread.current()
+        if not current then
             local function find(tbl)
                 local parsetbl = tbl.childs
                 if not parsetbl then parsetbl = tbl end
@@ -70,7 +71,8 @@ local function callThreads()
                     if not v.thread then
                         table.remove(parsetbl, i)
                     else
-                        coroutine.resume(v.thread, v.args)
+                        --computer.beep(2000, 0.1)
+                        assert(coroutine.resume(v.thread, table.unpack(v.args or {})))
                         v.args = nil
                         find(v)
                     end
@@ -108,7 +110,7 @@ function computer.pullSignal(time)
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
-        callThreads()
+        event.callThreads()
 
         local function runCallback(func, index, ...)
             local ok, err = pcall(func, ...)
@@ -159,7 +161,7 @@ function event.pull()
 end
 event.pull = computer.pullSignal
 
-event.timer(1, function()
+event.timer(0.1, function()
     
 end, math.huge)
 
