@@ -19,6 +19,15 @@ local computer_pullSignal = function(time)
     end
 end
 
+local function tableInsert(tbl, value)
+    for i = 1, #tbl + 1 do
+        if not tbl[i] then
+            tbl[i] = value
+            return i
+        end
+    end
+end
+
 local event = {}
 event.listens = {}
 event.interruptFlag = false
@@ -42,17 +51,15 @@ end
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
     checkArg(2, func, "function")
-    table.insert(event.listens, {eventType = eventType, func = func, type = "l"})
-    return #event.listens
+    return tableInsert(event.listens, {eventType = eventType, func = func, type = "l"}) --нет класический table.insert не подайдет, так как он не дает понять, нуда вставил значения
 end
 
 function event.timer(time, func, times)
     checkArg(1, time, "number")
     checkArg(2, func, "function")
     checkArg(3, times, "number", "nil")
-    table.insert(event.listens, {time = time, func = func, times = times or 1,
+    return tableInsert(event.listens, {time = time, func = func, times = times or 1,
     type = "t", lastTime = computer.uptime()})
-    return #event.listens
 end
 
 function event.cancel(num)
@@ -121,9 +128,10 @@ function computer.pullSignal(time)
         end
 
         local function runCallback(func, index, ...)
+            local oldState = event.isListen
             event.isListen = true
             local ok, err = pcall(func, ...)
-            event.isListen = false
+            event.isListen = oldState
             if ok then
                 if err == false then --таймер/слушатель хочет отключиться
                     event.listens[index] = nil
