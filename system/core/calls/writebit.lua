@@ -10,4 +10,4 @@ if current ~= value then
     byte = byte + (2 ^ index)
 end
 
-return byte
+return math.floor(byte)
