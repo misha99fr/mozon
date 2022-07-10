@@ -174,9 +174,34 @@ end
 
 event.push = computer.pushSignal
 
-function event.pull()
+function event.pull(time, ...)
+    local filters = {...}
+    if not time then
+        time = math.huge
+    end
+    if type(time) == "string" then
+        table.insert(filters, 1, time)
+        time = math.huge
+    end
     
+    local inTime = computer.uptime()
+    while true do
+        local ltime = time - (computer.uptime() - inTime)
+        if ltime <= 0 then break end
+        local eventData = {computer.pullSignal(ltime)}
+
+        local ok = true
+        for i, v in ipairs(filters) do
+            if v ~= eventData[i] then
+                ok = false
+                break
+            end
+        end
+
+        if ok then
+            return table.unpack(eventData)
+        end
+    end
 end
-event.pull = computer.pullSignal
 
 return event
