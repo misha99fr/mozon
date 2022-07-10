@@ -19,7 +19,7 @@ function programs.find(name)
             if fs.exists(path .. ".lua") and not fs.isDirectory(path .. ".lua") then
                 return path .. ".lua"
             else
-                if fs.exists(path) and fs.isDirectory(path) then
+                if fs.exists(path .. ".app") and fs.isDirectory(path .. ".app") then
                     path = paths.concat(path, "main.lua")
                     if fs.exists(path) then
                         return path
