@@ -6,6 +6,14 @@ local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
 
+function coroutine.xpcall(co, ...)
+    local output = {coroutine.resume(co, ...)}
+    if not output[1] then
+        return nil, output[2], debug.traceback(co)
+    end
+    return table.unpack(output)
+end
+
 function thread.current()
     local currentT = coroutine.running()
     local function find(tbl)

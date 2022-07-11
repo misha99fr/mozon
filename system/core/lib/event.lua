@@ -81,7 +81,7 @@ function event.callThreads(eventData)
                     table.remove(parsetbl, i)
                 else
                     --computer.beep(2000, 0.1)
-                    v.out = {coroutine.resume(v.thread, table.unpack(v.args or eventData))}
+                    v.out = {coroutine.xpcall(v.thread, table.unpack(v.args or eventData))}
                     v.args = nil
                     find(v)
                 end
