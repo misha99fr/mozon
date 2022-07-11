@@ -70,7 +70,7 @@ function event.cancel(num)
 end
 
 function event.interrupt()
-    local eventData = {computer.pullSignal(0)}
+    local eventData = {computer.pullSignal(0.2)}
     if #eventData > 0 then
         computer.pushSignal(table.unpack(eventData))
     end
