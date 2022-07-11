@@ -95,13 +95,15 @@ function window:uploadEvent(eventData)
     if eventData then
         if eventData[2] == self.screen and
         (eventData[1] == "touch" or eventData[1] == "drop" or eventData[1] == "drag" or eventData[1] == "scroll") then
-            local rePosX = (eventData[3] - self.x) + 1
-            local rePosY = (eventData[4] - self.y) + 1
-            self.selected = false
-            if rePosX >= 1 and rePosY >= 1
-            and rePosX <= self.sizeX and rePosY <= self.sizeY then
-                self.selected = true
-                newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
+            if self.selected or eventData[1] ~= "drop" then
+                local rePosX = (eventData[3] - self.x) + 1
+                local rePosY = (eventData[4] - self.y) + 1
+                self.selected = false
+                if rePosX >= 1 and rePosY >= 1
+                and rePosX <= self.sizeX and rePosY <= self.sizeY then
+                    self.selected = true
+                    newEventData = {eventData[1], eventData[2], rePosX, rePosY, eventData[5], eventData[6]}
+                end
             end
         elseif eventData[1] == "key_down" or eventData[1] == "key_up" or eventData[1] == "clipboard" then
             local ok
