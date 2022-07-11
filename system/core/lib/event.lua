@@ -7,6 +7,7 @@ local package = require("package")
 local raw_computer_pullSignal = computer.pullSignal
 local computer_pullSignal = function(time)
     if package.loaded.thread and package.loaded.thread.current() then
+        if not time then time = math.huge end
         local inTime = computer.uptime()
         repeat
             local eventData = {coroutine.yield()}
@@ -70,7 +71,7 @@ function event.cancel(num)
 end
 
 function event.interrupt()
-    local eventData = {computer.pullSignal(0.2)}
+    local eventData = {raw_computer_pullSignal(0)}
     if #eventData > 0 then
         computer.pushSignal(table.unpack(eventData))
     end
