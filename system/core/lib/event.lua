@@ -70,10 +70,14 @@ function event.cancel(num)
     return ok
 end
 
+event.oldinterrupttime = -math.huge
 function event.interrupt()
-    local eventData = {raw_computer_pullSignal(0)}
-    if #eventData > 0 then
-        computer.pushSignal(table.unpack(eventData))
+    if computer.uptime() - event.oldinterrupttime > 2 then
+        local eventData = {raw_computer_pullSignal(0)}
+        if #eventData > 0 then
+            computer.pushSignal(table.unpack(eventData))
+        end
+        event.oldinterrupttime = computer.uptime()
     end
 end
 
