@@ -69,6 +69,13 @@ function event.cancel(num)
     return ok
 end
 
+function event.interrupt()
+    local eventData = {computer.pullSignal(0)}
+    if #eventData > 0 then
+        computer.pushSignal(table.unpack(eventData))
+    end
+end
+
 function event.callThreads(eventData)
     local thread = package.loaded.thread
     if thread then
@@ -76,6 +83,7 @@ function event.callThreads(eventData)
             local parsetbl = tbl.childs
             if not parsetbl then parsetbl = tbl end
             for i = #parsetbl, 1, -1 do
+                event.interrupt()
                 local v = parsetbl[i]
                 if not v.thread or coroutine.status(v.thread) == "dead" then
                     table.remove(parsetbl, i)
@@ -174,7 +182,7 @@ end
 
 event.push = computer.pushSignal
 
-function event.pull(time, ...)
+function event.pull(time, ...) --добавляет фильтер, не юзать без надобнасти
     local filters = {...}
     if not time then
         time = math.huge
