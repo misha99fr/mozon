@@ -38,17 +38,21 @@ function thread.current()
     return find(thread.threads)
 end
 
-function thread.attachThread(t)
-    local obj = thread.current()
+function thread.attachThread(t, obj)
+    local obj = obj or thread.current()
     if obj then
-        table.insert(obj.childs, t)
+        if obj.childs then
+            table.insert(obj.childs, t)
+        else
+            table.insert(obj, t)
+        end
         return true
     end
     table.insert(thread.threads, t)
     return true
 end
 
-function thread.create(func, ...)
+local function create(func, ...)
     local t = coroutine.create(func, ...)
     local obj = {
         args = {...},
@@ -61,7 +65,18 @@ function thread.create(func, ...)
         suspend = suspend,
         status = status
     }
+    return obj
+end
+
+function thread.create(func, ...)
+    local obj = create(func, ...)
     thread.attachThread(obj)
+    return obj
+end
+
+function thread.createTo(func, connectTo, ...)
+    local obj = create(func, ...)
+    thread.attachThread(obj, connectTo)
     return obj
 end
 
