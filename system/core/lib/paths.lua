@@ -79,6 +79,7 @@ function paths.name(path)
 end
 
 --из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
+--[[
 function paths.path(path)
 	return path:match("^(.+%/).") or "/"
 end
@@ -86,6 +87,7 @@ end
 function paths.name(path)
 	return path:match("%/?([^%/]+%/?)$")
 end
+]]
 
 function paths.extension(path)
 	local data = path:match("[^%/]+(%.[^%/]+)%/?$")

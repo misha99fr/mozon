@@ -5,7 +5,10 @@ local gpu = graphic.findGpu(screen)
 local tbl = {}
 for cx = x, x + (sx - 1) do
     for cy = y, y + (sy - 1) do
-        table.insert(tbl, {cx, cy, {gpu.get(cx, cy)}})
+        local ok, data1, data2, data3 = pcall(gpu.get, cx, cy)
+        if ok then
+            table.insert(tbl, {cx, cy, {data1, data2, data3}})
+        end
     end
 end
 
