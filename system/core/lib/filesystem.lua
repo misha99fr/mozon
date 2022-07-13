@@ -34,7 +34,7 @@ end
 function filesystem.umount(path)
     path = paths.canonical(path)
     for i, v in ipairs(filesystem.mountList) do
-        if v[2] == path then
+        if v[2] == paths.canonical(path) then
             table.remove(filesystem.mountList, i)
             return true
         end

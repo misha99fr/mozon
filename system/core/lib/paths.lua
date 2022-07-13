@@ -66,9 +66,9 @@ function paths.path(path)
     local parts = paths.segments(path)
     local result = table.concat(parts, "/", 1, #parts - 1) .. "/"
     if unicode.sub(path, 1, 1) == "/" and unicode.sub(result, 1, 1) ~= "/" then
-        return "/" .. result
+        return paths.canonical("/" .. result)
     else
-        return result
+        return paths.canonical(result)
     end
 end
   
