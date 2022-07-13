@@ -45,7 +45,9 @@ end
 function event.sleep(time)
     local inTime = computer.uptime()
     repeat
-        computer.pullSignal(time - (computer.uptime() - inTime))
+        local itime = time - (computer.uptime() - inTime)
+        if itime < 0.1 then itime = 0.1 end
+        computer.pullSignal(itime)
     until computer.uptime() - inTime > time
 end
 
@@ -72,6 +74,7 @@ end
 
 event.oldinterrupttime = -math.huge
 function event.interrupt()
+    do return end
     if computer.uptime() - event.oldinterrupttime > 2 then
         local eventData = {raw_computer_pullSignal(0)}
         if #eventData > 0 then
