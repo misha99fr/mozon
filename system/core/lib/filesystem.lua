@@ -96,7 +96,14 @@ end
 function filesystem.list(path)
 	local proxy, proxyPath = filesystem.get(path)
 	local tbl = proxy.list(proxyPath)
+
 	if tbl then
+		for i = 1, #filesystem.mountList do
+			if paths.canonical(path) == paths.path(filesystem.mountList[i][2]) then
+				table.insert(tbl, paths.name(filesystem.mountList[i][2]))
+			end
+		end
+		tbl.n = #tbl
 		table.sort(tbl)
 	end
 	return tbl
