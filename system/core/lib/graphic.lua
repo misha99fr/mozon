@@ -177,7 +177,7 @@ function window:read(x, y, sizeX, background, foreground, preStr, crypto)
                     redraw()
                 elseif eventData[4] == 14 then
                     if #buffer > 0 then
-                        buffer = unicode.sub(buffer, 1, #buffer - 1)
+                        buffer = unicode.sub(buffer, 1, unicode.len(buffer) - 1)
                         redraw()
                     end
                 elseif eventData[4] == 46 then
