@@ -74,7 +74,6 @@ end
 
 event.oldinterrupttime = -math.huge
 function event.interrupt()
-    do return end
     if computer.uptime() - event.oldinterrupttime > 2 then
         local eventData = {raw_computer_pullSignal(0)}
         if #eventData > 0 then
@@ -91,7 +90,6 @@ function event.callThreads(eventData)
             local parsetbl = tbl.childs
             if not parsetbl then parsetbl = tbl end
             for i = #parsetbl, 1, -1 do
-                event.interrupt()
                 local v = parsetbl[i]
                 if not v.thread or coroutine.status(v.thread) == "dead" then
                     table.remove(parsetbl, i)

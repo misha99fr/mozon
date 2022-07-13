@@ -50,6 +50,8 @@ function filesystem.get(path)
             return filesystem.mountList[i][1], unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, -1)
         end
     end
+
+	return filesystem.mountList[1][1], filesystem.mountList[1][2]
 end
 
 --[[
