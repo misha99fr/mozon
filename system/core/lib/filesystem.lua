@@ -190,7 +190,9 @@ function filesystem.copy(fromPath, toPath)
 	copyRecursively(fromPath, toPath)
 end
 
-assert(filesystem.mount(computer.getBootAddress(), "/"))
+filesystem.bootaddress = computer.getBootAddress()
+
+assert(filesystem.mount(filesystem.bootaddress, "/"))
 assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
 
 return filesystem
