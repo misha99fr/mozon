@@ -25,16 +25,19 @@ function filesystem.mount(proxy, path)
     end
 	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     table.insert(filesystem.mountList, {proxy, path})
+	--[[
 	table.sort(filesystem.mountList, function(a, b)
 		return unicode.len(a[2]) > unicode.len(b[2])
 	end)
+	]]
 	return true
 end
 
 function filesystem.umount(path)
     path = paths.canonical(path)
+	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     for i, v in ipairs(filesystem.mountList) do
-        if v[2] == paths.canonical(path) then
+        if v[2] == path then
             table.remove(filesystem.mountList, i)
             return true
         end
