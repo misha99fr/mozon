@@ -150,6 +150,9 @@ function filesystem.open(path, mode)
 end
 
 function filesystem.copy(fromPath, toPath)
+	if paths.canonical(fromPath) == paths.canonical(toPath) then
+		return
+	end
 	local function copyRecursively(fromPath, toPath)
 		if filesystem.isDirectory(fromPath) then
 			filesystem.makeDirectory(toPath)
