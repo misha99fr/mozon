@@ -25,11 +25,9 @@ function filesystem.mount(proxy, path)
     end
 	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     table.insert(filesystem.mountList, {proxy, path})
-	--[[
 	table.sort(filesystem.mountList, function(a, b)
 		return unicode.len(a[2]) > unicode.len(b[2])
 	end)
-	]]
 	return true
 end
 
