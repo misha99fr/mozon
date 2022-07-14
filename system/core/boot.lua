@@ -1,11 +1,15 @@
 --likeOS classic boot loader
 
-do
+do --main
     local raw_loadfile = ...
 
     local component = component
     local computer = computer
     local unicode = unicode
+
+    pcall(computer.setArchitecture, "Lua 5.3")
+
+    ------------------------------------
 
     _G._COREVERSION = "v0.1"
     _G._COREVERSIONID = 1
