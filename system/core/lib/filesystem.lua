@@ -77,6 +77,12 @@ function filesystem.size(path)
 end
 
 function filesystem.isDirectory(path)
+	for i, v in ipairs(filesystem.mountList) do
+		if v[2] == paths.canonical(path) then
+			return true
+		end
+	end
+
 	local proxy, proxyPath = filesystem.get(path)
 	return proxy.isDirectory(proxyPath)
 end

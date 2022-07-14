@@ -3,14 +3,17 @@
 do
     local bootaddress, invoke = computer.getBootAddress(), component.invoke
     local function raw_loadfile(path, mode, env)
-        local file, buffer = assert(invoke(bootaddress, "open", path, "rb")), ""
+        local file, err = invoke(bootaddress, "open", path, "rb")
+        if not file then return nil, err end
+        local buffer = ""
         repeat
             local data = invoke(bootaddress, "read", file, math.huge)
             buffer = buffer .. (data or "")
         until not data
         return load(buffer, "=" .. path, mode or "bt", env or _G)
     end
-    assert(xpcall(assert(raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile))
+    local raw_loadfile("/system/core/boot.lua")), debug.traceback, raw_loadfile)
+
 end
 
 do
