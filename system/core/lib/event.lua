@@ -37,7 +37,7 @@ event.isListen = false --если текуший код timer/listen
 ------------------------------------
 
 function event.tmpLog(data)
-    local file = assert(fs.open("/tmplog.log", "ab"))
+    local file = assert(fs.open("/errorlog.txt", "ab"))
     file.write(data .. "\n")
     file.close()
 end
