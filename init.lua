@@ -1,4 +1,6 @@
 --в ОС присутствует код из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
+--likeOS, "чистая" ос без оболочьки, с низкими сис требованиями
+--предназначена для автоматизации(роботов, упровления аэс)
 
 local bootaddress, invoke = computer.getBootAddress(), component.invoke
 local function raw_loadfile(path, mode, env)
@@ -16,19 +18,3 @@ if not code then
     error("err to load bootloader " .. (err or "unknown error"), 0)
 end
 code(raw_loadfile)
-
-
-do
-    local fs = require("filesystem")
-    local paths = require("paths")
-    local programs = require("programs")
-
-    
-
-    if fs.exists("/system/main.lua") then
-        local ok, err = xpcall(assert(programs.load("/system/main.lua")), debug.traceback)
-        if not ok then
-            error(err, 0)
-        end
-    end
-end

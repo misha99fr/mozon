@@ -1,41 +1,63 @@
-local raw_loadfile = ...
+--likeOS classic boot loader
 
-----------------------------------
+do
+    local raw_loadfile = ...
 
-local component = component
-local computer = computer
-local unicode = unicode
+    local component = component
+    local computer = computer
+    local unicode = unicode
 
-_G._COREVERSION = "v0.1"
-_G._COREVERSIONID = 1
+    _G._COREVERSION = "v0.1"
+    _G._COREVERSIONID = 1
 
-local function createEnv()
-    return setmetatable({_G = _G}, {__index = _G})
-end
+    local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
+        return setmetatable({_G = _G}, {__index = _G})
+    end
 
-local function raw_dofile(path, mode, env, ...)
-    return assert(raw_loadfile(path, mode, env))(...)
-end
+    local function raw_dofile(path, mode, env, ...)
+        return assert(raw_loadfile(path, mode, env))(...)
+    end
 
-do --package
-    local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
+    do --package
+        local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
 
-    _G.computer = nil
-    _G.component = nil
-    _G.unicode = nil
-end
+        _G.computer = nil
+        _G.component = nil
+        _G.unicode = nil
+    end
 
-do --boot scripts
-    local fs = require("filesystem")
-    local paths = require("paths")
-
-    local path = "/system/core/boot"
-    for i, v in ipairs(fs.list(path) or {}) do
-        raw_dofile(paths.concat(path, v), nil, _G)
+    do --boot scripts
+        local fs = require("filesystem")
+        local paths = require("paths")
+    
+        local path = "/system/core/boot"
+        for i, v in ipairs(fs.list(path) or {}) do
+            raw_dofile(paths.concat(path, v), nil, _G)
+        end
     end
 end
 
-do --autorun
+do --unittests
+    local fs = require("filesystem")
+    local paths = require("paths")
+    local programs = require("programs")
+
+    local function unittests(path)
+        for _, file in ipairs(fs.list(path) or {}) do
+            local lpath = paths.concat(path, file)
+            local ok, state, log = assert(programs.execute(lpath))
+            if not ok then
+                error("error " .. (state or "unknown error") .. " in unittest " .. file, 0)
+            elseif not state then
+                error("warning utittest " .. file .. (log and (", log:\n" .. log) or ""), 0)
+            end
+        end
+    end
+    unittests("/system/core/unittests")
+    unittests("/system/unittests")
+end
+
+do --используйте автозагрузку для программ выполняешихся быстно, и не требуюших взаимодействий
     local fs = require("filesystem")
     local paths = require("paths")
     local event = require("event")
@@ -60,22 +82,15 @@ do --autorun
     autorunsIn("/system/autoruns")
 end
 
-do
+do --используйте main.lua для запуска оболочьки, или основной программы
     local fs = require("filesystem")
-    local paths = require("paths")
     local programs = require("programs")
 
-    local function unittests(path)
-        for _, file in ipairs(fs.list(path) or {}) do
-            local lpath = paths.concat(path, file)
-            local ok, state, log = assert(programs.execute(lpath))
-            if not ok then
-                error("unittest error " .. (state or "unknown error") .. " in unittest " .. file, 0)
-            elseif not state then
-                error("warning utittest " .. file .. (log and (", log:\n" .. log) or ""), 0)
-            end
+    if fs.exists("/system/main.lua") then
+        local code, err = programs.load("/system/main.lua")
+        if not code then
+            error("failed to loading main.lua" .. (err), 0)
         end
+        code()
     end
-    unittests("/system/core/unittests")
-    unittests("/system/unittests")
 end

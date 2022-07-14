@@ -3,7 +3,7 @@ local component = require("component")
 local computer = require("computer")
 
 local timer, isKeyboard
-event.listen(nil, function(eventType, uuid, ctype)
+event.listen(nil, function(eventType, uuid, ctype) --тут происходит обновления getDeviceInfo и getKeyboard, так как в ос они используються часто
     if eventType == "component_added" or eventType == "component_removed" then
         if timer then
             event.cancel(timer)
