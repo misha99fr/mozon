@@ -25,17 +25,6 @@ do --package
     _G.unicode = nil
 end
 
-local lastTime = computer.uptime() --удаляю лишнии эвенты
-while true do
-    local eventData = {computer.pullSignal(0.5)}
-    if eventData[1] == "component_added" or eventData[1] == "component_removed" then
-        lastTime = computer.uptime()
-    end
-    if computer.uptime() - lastTime > 1 then
-        break
-    end
-end
-
 do --boot scripts
     local fs = require("filesystem")
     local paths = require("paths")
@@ -46,7 +35,7 @@ do --boot scripts
     end
 end
 
-do
+do --autorun
     local fs = require("filesystem")
     local paths = require("paths")
     local event = require("event")
@@ -69,4 +58,24 @@ do
     end
     autorunsIn("/system/core/autoruns")
     autorunsIn("/system/autoruns")
+end
+
+do
+    local fs = require("filesystem")
+    local paths = require("paths")
+    local programs = require("programs")
+
+    local function unittests(path)
+        for _, file in ipairs(fs.list(path) or {}) do
+            local lpath = paths.concat(path, file)
+            local ok, state, log = assert(programs.execute(lpath))
+            if not ok then
+                error("unittest error " .. (state or "unknown error") .. " in unittest " .. file, 0)
+            elseif not state then
+                error("warning utittest " .. file .. (log and (", log:\n" .. log) or ""), 0)
+            end
+        end
+    end
+    unittests("/system/core/unittests")
+    unittests("/system/unittests")
 end
