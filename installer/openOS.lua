@@ -50,7 +50,7 @@ fs.umount(mountPath)
 fs.mount(proxy, mountPath)
 
 proxy.remove("/")
-proxy.setLabel("")
+proxy.setLabel("likeOS installer v1.0")
 
 ------------------------------------
 
