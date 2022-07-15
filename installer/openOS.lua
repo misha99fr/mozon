@@ -7,8 +7,12 @@ if not component.isAvailable("internet") then
     return
 end
 
-local function readFunc()
-    io.write("[Y/n] ")
+local function readFunc(alternativeSplast)
+    if alternativeSplast then
+        io.write("index: ")
+    else
+        io.write("[Y/n] ")
+    end
     local read = term.read()
     if not read then return end
     return read:sub(1, #read - 1)
@@ -28,7 +32,7 @@ end
 
 print("выберите диск который хотите сделать устоновочьным")
 print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
-local read = readFunc()
+local read = readFunc(true)
 if not read then return end
 if not tonumber(read) then
     print("invalide input")
