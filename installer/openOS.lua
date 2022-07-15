@@ -19,7 +19,7 @@ end
 local count = 1
 local variantes = {}
 for address in component.list("filesystem") do
-    if not component.invoke(address, "isReadOnly") and address ~= computer.tmpAddress() then
+    if not component.invoke(address, "isReadOnly") and address ~= computer.tmpAddress() and address ~= fs.get("/").address then
         print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
         count = count + 1
         table.insert(variantes, address)
