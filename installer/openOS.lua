@@ -22,7 +22,7 @@ if not tonumber(read) then
     print("invalide input")
     return
 end
-local address = variantes[read]
+local address = variantes[tonumber(read)]
 local proxy = component.proxy(address)
 
 local mountPath = "/free/tempMounts/installdrive"
@@ -80,7 +80,7 @@ for i, path in ipairs(filelist) do
 
     local lpath = fs.concat(mountPath, "core", path)
     fs.makeDirectory(fs.path(lpath))
-    local file = io.open(lpath, "rb")
+    local file = assert(io.open(lpath, "wb"))
     file:write(data)
     file:close()
 end
@@ -88,11 +88,11 @@ end
 proxy.makeDirectory("/boot/kernel")
 proxy.rename("/init.lua", "/boot/kernel/likemode")
 
-local file = io.open(fs.concat(mountPath, "init.lua"), "rb")
+local file = io.open(fs.concat(mountPath, "init.lua"), "wb")
 file:write(assert(getInternetFile(url .. "/maininstaller.lua")))
 file:close()
 
-local file = io.open(fs.concat(mountPath, ".install"), "rb")
+local file = io.open(fs.concat(mountPath, ".install"), "wb")
 file:write(assert(getInternetFile(url .. "/oschanger.lua")))
 file:close()
 
@@ -107,7 +107,7 @@ local function downloadDistribution(url, folder)
 
         local lpath = fs.concat(mountPath, "distributions", folder, path)
         fs.makeDirectory(fs.path(lpath))
-        local file = io.open(lpath, "wb")
+        local file = assert(io.open(lpath, "wb"))
         file:write(data)
         file:close()
     end
