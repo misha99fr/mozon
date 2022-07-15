@@ -6,6 +6,12 @@ if not component.isAvailable("internet") then
     return
 end
 
+local function read()
+    local read = term.read()
+    if not read then return end
+    return read:sub(1, #read - 1)
+end
+
 ------------------------------------
 
 local count = 1
@@ -20,7 +26,7 @@ end
 
 print("выберите диск который хотите сделать устоновочьным")
 print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
-local read = io.read()
+local read = read()
 if not read then return end
 if not tonumber(read) then
     print("invalide input")
@@ -32,7 +38,7 @@ local proxy = component.proxy(address)
 print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
 print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
 
-local ok = io.read()
+local ok = read()
 if not ok or ok:lower() ~= "y" then
     return
 end
@@ -83,12 +89,6 @@ local function split(str, sep)
     end
     if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
     return parts
-end
-
-local function read()
-    local read = term.read()
-    if not read then return end
-    return read:sub(1, #read - 1)
 end
 
 local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
