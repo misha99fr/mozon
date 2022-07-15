@@ -26,6 +26,7 @@ local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
 local internet = component.proxy(component.list("internet")())
+local installerVersion = "likeOS installer v1.0"
 
 ------------------------------------
 
@@ -197,7 +198,27 @@ end
 ------------------------------------
 
 local function selectDist(dists)
-    
+    local strs = {}
+    local funcs = {}
+    table.insert(strs, "back")
+
+    for i, v in ipairs(dists) do
+        table.insert(strs, v.name)
+        table.insert(funcs, v.call)
+    end
+
+    local num
+    while true do
+        num = menu("select distribution", strs, num)
+        if funcs[num] then
+            local proxy = getInstallDisk()
+            if proxy then
+                funcs[num](proxy)
+                if computer.setBootAddress then computer.setBootAddress(proxy.address) end
+                if computer.setBootFile then computer.setBootFile("/init.lua") end
+            end
+        end
+    end
 end
 
 local function offline()
@@ -243,7 +264,7 @@ end
 if internet then
     local num
     while true do
-        num = menu("likeOS installer v1.0", {"offline mode", "online mode", "shutdown"}, num)
+        num = menu(installerVersion, {"offline mode", "online mode", "shutdown"}, num)
         if num == 1 then
             offline()
         elseif num == 2 then
@@ -255,7 +276,7 @@ if internet then
 else
     local num
     while true do
-        num = menu("likeOS installer v1.0", {"next", "shutdown"}, num)
+        num = menu(installerVersion, {"next", "shutdown"}, num)
         if num == 1 then
             offline()
         elseif num == 2 then
