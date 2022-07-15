@@ -1,4 +1,4 @@
-local computer = require("computer")
+local computer = computer or require("computer")
 local fs = require("filesystem")
 
 local function getPath()
