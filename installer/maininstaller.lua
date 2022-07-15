@@ -216,6 +216,7 @@ local function selectDist(dists)
                 funcs[num](proxy)
                 if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                 if computer.setBootFile then computer.setBootFile("/init.lua") end
+                computer.shutdown(true)
             end
         end
     end
