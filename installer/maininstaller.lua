@@ -21,5 +21,67 @@ local gpu = component.proxy((computer.getBootGpu and computer.getBootGpu() or ge
 local screen = (computer.getBootScreen and computer.getBootScreen() or getBestGPUOrScreenAddress("screen")) or error("no screen found", 0)
 gpu.bind(screen)
 
+local drive = component.proxy(computer.getBootAddress())
+
 ------------------------------------
+
+local function segments(path)
+    local parts = {}
+    for part in path:gmatch("[^\\/]+") do
+        local current, up = part:find("^%.?%.$")
+        if current then
+            if up == 2 then
+                table.remove(parts)
+            end
+        else
+            table.insert(parts, part)
+        end
+    end
+    return parts
+end
+
+local function canonical(path)
+    local result = table.concat(segments(path), "/")
+    if unicode.sub(path, 1, 1) == "/" then
+        return "/" .. result
+    else
+        return result
+    end
+end
+
+local function fs_path(path)
+    local parts = segments(path)
+    local result = table.concat(parts, "/", 1, #parts - 1) .. "/"
+    if unicode.sub(path, 1, 1) == "/" and unicode.sub(result, 1, 1) ~= "/" then
+        return canonical("/" .. result)
+    else
+        return canonical(result)
+    end
+end
+
+local function cloneTo(folder, targetDrive)
+    local function recurse(path)
+        for _, lpath in ipairs(drive.list(path) or {}) do
+            local full_path = path
+
+            if drive.isDirectory(full_path) then
+                recurse(full_path)
+            else
+                local file = drive.open(full_path, "rb")
+                local buffer = ""
+                repeat
+                    local data = drive.read(file, math.huge)
+                    buffer = buffer .. (data or "")
+                until not buffer
+                drive.close(file)
+
+                targetDrive.makeDirectory(fs_path(full_path))
+                local file = targetDrive.open(full_path, "wb")
+                targetDrive.write(file, buffer)
+                targetDrive.close(file)
+            end
+        end
+    end
+    recurse(folder)
+end
 

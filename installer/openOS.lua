@@ -78,8 +78,8 @@ for i, path in ipairs(filelist) do
     local full_url = url .. path
     local data = assert(getInternetFile(full_url))
 
-    local lpath = fs.concat(mountPath, path)
-    proxy.makeDirectory(fs.path(lpath))
+    local lpath = fs.concat(mountPath, "core", path)
+    fs.makeDirectory(fs.path(lpath))
     local file = io.open(lpath, "rb")
     file:write(data)
     file:close()
@@ -98,15 +98,15 @@ file:close()
 
 -----------------------------------------------------------------------------
 
-local function downloadDistribution(url)
+local function downloadDistribution(url, folder)
     local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
 
     for i, path in ipairs(filelist) do
         local full_url = url .. path
         local data = assert(getInternetFile(full_url))
 
-        local lpath = fs.concat(mountPath, "distributions", path)
-        proxy.makeDirectory(fs.path(lpath))
+        local lpath = fs.concat(mountPath, "distributions", folder, path)
+        fs.makeDirectory(fs.path(lpath))
         local file = io.open(lpath, "rb")
         file:write(data)
         file:close()
