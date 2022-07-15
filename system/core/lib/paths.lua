@@ -98,6 +98,9 @@ function paths.extension(path)
 end
 
 function paths.hideExtension(path)
+    if paths.name(path):sub(1, 1) == "." and not string.find(paths.name(path):sub(2, 2), "%.") then
+        return path
+    end
 	return path:match("(.+)%..+") or path
 end
 
