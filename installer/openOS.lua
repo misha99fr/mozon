@@ -6,7 +6,7 @@ if not component.isAvailable("internet") then
     return
 end
 
-local function read()
+local function readFunc()
     local read = term.read()
     if not read then return end
     return read:sub(1, #read - 1)
@@ -26,7 +26,7 @@ end
 
 print("выберите диск который хотите сделать устоновочьным")
 print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
-local read = read()
+local read = readFunc()
 if not read then return end
 if not tonumber(read) then
     print("invalide input")
@@ -38,7 +38,7 @@ local proxy = component.proxy(address)
 print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
 print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
 
-local ok = read()
+local ok = readFunc()
 if not ok or ok:lower() ~= "y" then
     return
 end
@@ -137,3 +137,5 @@ local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com
 for i, v in ipairs(filelist) do
     downloadDistribution(table.unpack(split(v, ";")))
 end
+
+print("создания загрузочьного диска завершено")

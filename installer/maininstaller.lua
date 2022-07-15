@@ -212,7 +212,7 @@ local function getInstallDisk()
     local addresses = {}
 
     for address in component.list("filesystem") do
-        if not component.invoke(address, "isReadOnly") then
+        if not component.invoke(address, "isReadOnly") and address ~= drive.address then
             table.insert(strs, address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "noLabel"))
             table.insert(addresses, address)
         end
