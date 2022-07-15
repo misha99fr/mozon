@@ -218,7 +218,7 @@ local function getInstallDisk()
         end
     end
     table.insert(strs, "back")
-    return component.proxy(addresses[menu("select disk", strs, 1)])
+    return component.proxy(addresses[menu("select disk", strs, 1)] or "")
 end
 
 local function selectDist(dists)
