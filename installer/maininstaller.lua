@@ -67,30 +67,27 @@ local function fs_path(path)
 end
 
 local function cloneTo(folder, targetPath, targetDrive)
-    local function recurse(path)
-        for _, lpath in ipairs(drive.list(path) or {}) do
-            local full_path = path .. lpath
-            local target_path = targetPath .. lpath
+    for _, lpath in ipairs(drive.list(folder) or {}) do
+        local full_path = folder .. lpath
+        local target_path = targetPath .. lpath
 
-            if drive.isDirectory(full_path) then
-                recurse(full_path, target_path, targetDrive)
-            else
-                local file = drive.open(full_path, "rb")
-                local buffer = ""
-                repeat
-                    local data = drive.read(file, math.huge)
-                    buffer = buffer .. (data or "")
-                until not buffer
-                drive.close(file)
+        if drive.isDirectory(full_path) then
+            cloneTo(full_path, target_path, targetDrive)
+        else
+            local file = drive.open(full_path, "rb")
+            local buffer = ""
+            repeat
+                local data = drive.read(file, math.huge)
+                buffer = buffer .. (data or "")
+            until not buffer
+            drive.close(file)
 
-                targetDrive.makeDirectory(fs_path(target_path))
-                local file = targetDrive.open(target_path, "wb")
-                targetDrive.write(file, buffer)
-                targetDrive.close(file)
-            end
+            targetDrive.makeDirectory(fs_path(target_path))
+            local file = targetDrive.open(target_path, "wb")
+            targetDrive.write(file, buffer)
+            targetDrive.close(file)
         end
     end
-    recurse(folder)
 end
 
 ------------------------------------
@@ -245,11 +242,14 @@ end
 local function offline()
     local dists = {}
     for i, v in ipairs(drive.list("/distributions") or {}) do
-        table.insert(dists, {name = v, call = function(proxy)
+        table.insert(dists, {name = v:sub(1, #v - 1), call = function(proxy)
             cloneTo("/core", "/", proxy)
             cloneTo("/distributions/" .. v, "/", proxy)
         end})
     end
+    table.insert(dists, {name = "core only", call = function(proxy)
+        cloneTo("/core", "/", proxy)
+    end})
     selectDist(dists)
 end
 
@@ -278,6 +278,10 @@ local function online()
             download(url, proxy)
         end})
     end
+
+    table.insert(dists, {name = "core only", call = function(proxy)
+        download("https://raw.githubusercontent.com/igorkll/likeOS/main", proxy)
+    end})
 
     selectDist(dists)
 end
