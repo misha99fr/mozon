@@ -47,3 +47,29 @@ local function getInternetFile(url)
         return nil, "unvalid address"
     end
 end
+
+local function split(str, sep)
+    local parts, count, i = {}, 1, 1
+    while 1 do
+        if i > #str then break end
+        local char = str:sub(i, i - 1 + #sep)
+        if not parts[count] then parts[count] = "" end
+        if char == sep then
+            count = count + 1
+            i = i + #sep
+        else
+            parts[count] = parts[count] .. str:sub(i, i)
+            i = i + 1
+        end
+    end
+    if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
+    return parts
+end
+
+local url = "https://raw.githubusercontent.com/igorkll/likeOS/main/installer"
+local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+
+for i, v in ipairs(filelist) do
+    local full_url = url .. v
+    local data = assert(getInternetFile(full_url))
+end
