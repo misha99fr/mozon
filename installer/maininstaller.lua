@@ -120,7 +120,23 @@ local function menu(label, strs, funcs, selected)
             if selected == i then invert() end
         end
     end
+    redraw()
     while true do
-        
+        local eventData = {computer.pullSignal()}
+        if isValideKeyboard(eventData[1]) then
+            if eventData[4] == 200 then
+                if selected < #strs then
+                    selected = selected + 1
+                    redraw()
+                end
+            elseif eventData[4] == 208 then
+                if selected > 1 then
+                    selected = selected - 1
+                    redraw()
+                end
+            elseif eventData[4] == 28 then
+                return selected
+            end
+        end
     end
 end
