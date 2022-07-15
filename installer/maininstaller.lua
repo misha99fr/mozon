@@ -63,13 +63,14 @@ local function fs_path(path)
     end
 end
 
-local function cloneTo(folder, targetDrive)
+local function cloneTo(folder, targetPath, targetDrive)
     local function recurse(path)
         for _, lpath in ipairs(drive.list(path) or {}) do
-            local full_path = path
+            local full_path = path .. lpath
+            local target_path = targetPath .. lpath
 
             if drive.isDirectory(full_path) then
-                recurse(full_path)
+                recurse(full_path, target_path, targetDrive)
             else
                 local file = drive.open(full_path, "rb")
                 local buffer = ""
@@ -79,8 +80,8 @@ local function cloneTo(folder, targetDrive)
                 until not buffer
                 drive.close(file)
 
-                targetDrive.makeDirectory(fs_path(full_path))
-                local file = targetDrive.open(full_path, "wb")
+                targetDrive.makeDirectory(fs_path(target_path))
+                local file = targetDrive.open(target_path, "wb")
                 targetDrive.write(file, buffer)
                 targetDrive.close(file)
             end
@@ -202,8 +203,9 @@ end
 local function offline()
     local dists = {}
     for i, v in ipairs(drive.list("/distributions") or {}) do
-        table.insert(dists, {name = v, function()
-            
+        table.insert(dists, {name = v, function(proxy)
+            cloneTo("/core", "/", proxy)
+            cloneTo("/distributions/" .. v, "/", proxy)
         end})
     end
 end
