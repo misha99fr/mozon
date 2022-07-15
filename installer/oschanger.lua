@@ -27,3 +27,4 @@ computer.setBootAddress(driveAddress)
 if computer.setBootFile then
     computer.setBootFile("/init.lua")
 end
+computer.shutdown(true)
