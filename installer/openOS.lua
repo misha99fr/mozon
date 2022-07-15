@@ -89,11 +89,11 @@ proxy.makeDirectory("/boot/kernel")
 proxy.rename("/init.lua", "/boot/kernel/likemode")
 
 local file = io.open(fs.concat(mountPath, "init.lua"), "wb")
-file:write(assert(getInternetFile(url .. "/maininstaller.lua")))
+file:write(assert(getInternetFile(url .. "/installer/maininstaller.lua")))
 file:close()
 
 local file = io.open(fs.concat(mountPath, ".install"), "wb")
-file:write(assert(getInternetFile(url .. "/oschanger.lua")))
+file:write(assert(getInternetFile(url .. "/installer/oschanger.lua")))
 file:close()
 
 -----------------------------------------------------------------------------
