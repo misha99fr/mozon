@@ -25,6 +25,7 @@ local rx, ry = gpu.getResolution()
 local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
+local internet = component.proxy(component.list("internet")())
 
 ------------------------------------
 
@@ -98,6 +99,46 @@ local function isValideKeyboard(address)
     end
 end
 
+local function getInternetFile(url)
+    local handle, data, result, reason = internet.request(url), ""
+    if handle then
+        while true do
+            result, reason = handle.read(math.huge) 
+            if result then
+                data = data .. result
+            else
+                handle.close()
+                
+                if reason then
+                    return nil, reason
+                else
+                    return data
+                end
+            end
+        end
+    else
+        return nil, "unvalid address"
+    end
+end
+
+local function split(str, sep)
+    local parts, count, i = {}, 1, 1
+    while 1 do
+        if i > #str then break end
+        local char = str:sub(i, i - 1 + #sep)
+        if not parts[count] then parts[count] = "" end
+        if char == sep then
+            count = count + 1
+            i = i + #sep
+        else
+            parts[count] = parts[count] .. str:sub(i, i)
+            i = i + 1
+        end
+    end
+    if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
+    return parts
+end
+
 ------------------------------------
 
 local function invert()
@@ -108,7 +149,7 @@ local function setText(str, posX, posY)
     gpu.set((posX or 0) + math.floor(rx / 2 - ((#str - 1) / 2) + .5), posY or math.floor(ry / 2 + .5), str)
 end
 
-local function menu(label, strs, funcs, selected)
+local function menu(label, strs, selected)
     local selected = selected or 1
     local function redraw()
         invert()
@@ -137,6 +178,60 @@ local function menu(label, strs, funcs, selected)
             elseif eventData[4] == 28 then
                 return selected
             end
+        end
+    end
+end
+
+local function clear()
+    gpu.setBackground(0)
+    gpu.setForeground(-1)
+    gpu.fill(1, 1, rx, ry, " ")
+end
+
+local function status(text)
+    clear()
+    setText(text)
+end
+
+------------------------------------
+
+local function selectDist(dists)
+    
+end
+
+local function offline()
+    local dists = {}
+    for i, v in ipairs(drive.list("/distributions") or {}) do
+        table.insert(dists, {name = v, function()
+            
+        end})
+    end
+end
+
+local function online()
+    
+end
+
+if internet then
+    local num
+    while true do
+        num = menu("likeOS installer v1.0", {"offline mode", "online mode", "shutdown"}, num)
+        if num == 1 then
+            offline()
+        elseif num == 2 then
+            online()
+        elseif num == 3 then
+            computer.shutdown()
+        end
+    end
+else
+    local num
+    while true do
+        num = menu("likeOS installer v1.0", {"next", "shutdown"}, num)
+        if num == 1 then
+            offline()
+        elseif num == 2 then
+            computer.shutdown()
         end
     end
 end
