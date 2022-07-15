@@ -66,10 +66,18 @@ local function fs_path(path)
     end
 end
 
+local function fs_concat(...)
+    local set = table.pack(...)
+    for index, value in ipairs(set) do
+        checkArg(index, value, "string")
+    end
+    return filesystem.canonical(table.concat(set, "/"))
+end
+
 local function cloneTo(folder, targetPath, targetDrive)
     for _, lpath in ipairs(drive.list(folder) or {}) do
-        local full_path = folder .. lpath
-        local target_path = targetPath .. lpath
+        local full_path = fs_concat(folder, lpath)
+        local target_path = fs_concat(targetPath, lpath)
 
         if drive.isDirectory(full_path) then
             cloneTo(full_path, target_path, targetDrive)
