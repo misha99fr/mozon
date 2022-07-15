@@ -7,15 +7,16 @@ end
 
 ------------------------------------
 
-print("выберите диск который хотите сделать устоновочьным")
 local count = 1
 local variantes = {}
 for address in component.list("filesystem") do
-    print(tostring(count) .. ". " .. (address:sub(1, 4)) .. " label: " .. (component.invoke(address, "getLabel") or ""))
+    print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
     count = count + 1
     table.insert(variantes, address)
 end
 
+print("выберите диск который хотите сделать устоновочьным")
+print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
 local read = io.read()
 if not read then return end
 if not tonumber(read) then
@@ -25,9 +26,19 @@ end
 local address = variantes[tonumber(read)]
 local proxy = component.proxy(address)
 
+print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
+print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+
+local ok = io.read()
+if not ok or ok:lower() ~= "y" then
+    return
+end
+
 local mountPath = "/free/tempMounts/installdrive"
 fs.umount(mountPath)
 fs.mount(proxy, mountPath)
+
+proxy.remove("/")
 
 ------------------------------------
 

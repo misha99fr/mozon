@@ -202,15 +202,42 @@ end
 
 ------------------------------------
 
+local function getInstallDisk()
+    local strs = {}
+    local funcs = {}
+
+    for address in component.list("filesystem")() do
+        table.insert(strs, v.name)
+        table.insert(funcs, v.call)
+    end
+    table.insert(strs, "back")
+
+    local num
+    while true do
+        num = menu("select disk", strs, num)
+        if funcs[num] then
+            local proxy = getInstallDisk()
+            if proxy then
+                funcs[num](proxy)
+                if computer.setBootAddress then computer.setBootAddress(proxy.address) end
+                if computer.setBootFile then computer.setBootFile("/init.lua") end
+                computer.shutdown(true)
+            else
+                break
+            end
+        end
+    end
+end
+
 local function selectDist(dists)
     local strs = {}
     local funcs = {}
-    table.insert(strs, "back")
 
     for i, v in ipairs(dists) do
         table.insert(strs, v.name)
         table.insert(funcs, v.call)
     end
+    table.insert(strs, "back")
 
     local num
     while true do
@@ -222,6 +249,8 @@ local function selectDist(dists)
                 if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                 if computer.setBootFile then computer.setBootFile("/init.lua") end
                 computer.shutdown(true)
+            else
+                break
             end
         end
     end
