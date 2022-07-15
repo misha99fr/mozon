@@ -23,6 +23,10 @@ if not tonumber(read) then
     return
 end
 local address = variantes[read]
+local proxy = component.proxy(address)
+
+local mountPath = "/free/tempMounts/"
+fs.umount(mountPath)
 
 ------------------------------------
 
@@ -69,7 +73,17 @@ end
 local url = "https://raw.githubusercontent.com/igorkll/likeOS/main/installer"
 local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
 
-for i, v in ipairs(filelist) do
-    local full_url = url .. v
+for i, path in ipairs(filelist) do
+    local full_url = url .. path
     local data = assert(getInternetFile(full_url))
+
+    local lpath = path
+    proxy.makeDirectory(fs.path(lpath))
+    local file = io.open(lpath, "rb")
+    file:write(data)
+    file:close()
 end
+
+proxy.makeDirectory("/boot/kernel")
+proxy.rename("/init.lua", "/boot/kernel/likemode")
+
