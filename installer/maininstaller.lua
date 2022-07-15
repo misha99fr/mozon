@@ -1,7 +1,9 @@
+local deviceinfo = computer.getDeviceInfo()
+
 local function getBestGPUOrScreenAddress(componentType) --функцию подарил игорь тимофеев
     local bestWidth, bestAddress = 0
 
-    for address in componentc.list(componentType) do
+    for address in component.list(componentType) do
         local width = tonumber(deviceinfo[address].width)
         if component.type(componentType) == "screen" then
             if #component.invoke(address, "getKeyboards") > 0 then --экраны с кравиатурами имеют больший приоритет
@@ -25,7 +27,7 @@ local rx, ry = gpu.getResolution()
 local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
-local internet = component.proxy(component.list("internet")())
+local internet = component.proxy(component.list("internet")() or "")
 local installerVersion = "likeOS installer v1.0"
 
 ------------------------------------
@@ -151,9 +153,16 @@ local function setText(str, posX, posY)
     gpu.set((posX or 0) + math.floor(rx / 2 - ((#str - 1) / 2) + .5), posY or math.floor(ry / 2 + .5), str)
 end
 
+local function clear()
+    gpu.setBackground(0)
+    gpu.setForeground(-1)
+    gpu.fill(1, 1, rx, ry, " ")
+end
+
 local function menu(label, strs, selected)
     local selected = selected or 1
     local function redraw()
+        clear()
         invert()
         setText(label, nil, 1)
         invert()
@@ -166,28 +175,24 @@ local function menu(label, strs, selected)
     redraw()
     while true do
         local eventData = {computer.pullSignal()}
-        if isValideKeyboard(eventData[1]) then
-            if eventData[4] == 200 then
-                if selected < #strs then
-                    selected = selected + 1
-                    redraw()
+        if isValideKeyboard(eventData[2] or "") then
+            if eventData[1] == "key_down" then
+                if eventData[4] == 208 then
+                    if selected < #strs then
+                        selected = selected + 1
+                        redraw()
+                    end
+                elseif eventData[4] == 200 then
+                    if selected > 1 then
+                        selected = selected - 1
+                        redraw()
+                    end
+                elseif eventData[4] == 28 then
+                    return selected
                 end
-            elseif eventData[4] == 208 then
-                if selected > 1 then
-                    selected = selected - 1
-                    redraw()
-                end
-            elseif eventData[4] == 28 then
-                return selected
             end
         end
     end
-end
-
-local function clear()
-    gpu.setBackground(0)
-    gpu.setForeground(-1)
-    gpu.fill(1, 1, rx, ry, " ")
 end
 
 local function status(text)
