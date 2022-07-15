@@ -87,7 +87,7 @@ local function cloneTo(folder, targetPath, targetDrive)
             repeat
                 local data = drive.read(file, math.huge)
                 buffer = buffer .. (data or "")
-            until not buffer
+            until not data
             drive.close(file)
 
             targetDrive.makeDirectory(fs_path(target_path))
