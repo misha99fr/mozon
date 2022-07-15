@@ -206,7 +206,7 @@ local function getInstallDisk()
     local strs = {}
     local addresses = {}
 
-    for address in component.list("filesystem")() do
+    for address in component.list("filesystem") do
         table.insert(strs, address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "noLabel"))
         table.insert(addresses, address)
     end
@@ -235,9 +235,9 @@ local function selectDist(dists)
                 if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                 if computer.setBootFile then computer.setBootFile("/init.lua") end
                 computer.shutdown(true)
-            else
-                break
             end
+        else
+            break
         end
     end
 end
