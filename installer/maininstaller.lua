@@ -211,6 +211,20 @@ local function offline()
     selectDist(dists)
 end
 
+local function download(url, targetDrive)
+    local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+
+    for i, path in ipairs(filelist) do
+        local full_url = url .. path
+        local data = assert(getInternetFile(full_url))
+
+        targetDrive.makeDirectory(fs_path(path))
+        local file = targetDrive.open(path, "wb")
+        targetDrive.write(file, data)
+        targetDrive.close(file)
+    end
+end
+
 local function online()
     local dists = {}
 

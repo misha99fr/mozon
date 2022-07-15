@@ -107,7 +107,7 @@ local function downloadDistribution(url, folder)
 
         local lpath = fs.concat(mountPath, "distributions", folder, path)
         fs.makeDirectory(fs.path(lpath))
-        local file = io.open(lpath, "rb")
+        local file = io.open(lpath, "wb")
         file:write(data)
         file:close()
     end
