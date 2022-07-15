@@ -243,7 +243,7 @@ local function selectDist(dists)
                     funcs[num](proxy)
                     if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                     if computer.setBootFile then computer.setBootFile("/init.lua") end
-                    computer.shutdown(true)
+                    computer.shutdown("fast")
                 end
             end
         else
@@ -314,7 +314,7 @@ if internet then
 else
     local num
     while true do
-        num = menu(installerVersion, {"next", "shutdown"}, num)
+        num = menu(installerVersion, {"offline mode", "shutdown"}, num)
         if num == 1 then
             offline()
         elseif num == 2 then

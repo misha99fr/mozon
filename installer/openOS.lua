@@ -7,7 +7,7 @@ if not component.isAvailable("internet") then
 end
 
 local function readFunc()
-    io.write("[Y/n]")
+    io.write("[Y/n] ")
     local read = term.read()
     if not read then return end
     return read:sub(1, #read - 1)
