@@ -10,9 +10,11 @@ end
 local count = 1
 local variantes = {}
 for address in component.list("filesystem") do
-    print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
-    count = count + 1
-    table.insert(variantes, address)
+    if not component.invoke(address, "isReadOnly") then
+        print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
+        count = count + 1
+        table.insert(variantes, address)
+    end
 end
 
 print("выберите диск который хотите сделать устоновочьным")
