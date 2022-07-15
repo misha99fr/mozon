@@ -95,3 +95,22 @@ file:close()
 local file = io.open(fs.concat(mountPath, ".install"), "rb")
 file:write(assert(getInternetFile(url .. "/oschanger.lua")))
 file:close()
+
+-----------------------------------------------------------------------------
+
+local function downloadDistribution(url)
+    local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+
+    for i, path in ipairs(filelist) do
+        local full_url = url .. path
+        local data = assert(getInternetFile(full_url))
+
+        local lpath = fs.concat(mountPath, "distributions", path)
+        proxy.makeDirectory(fs.path(lpath))
+        local file = io.open(lpath, "rb")
+        file:write(data)
+        file:close()
+    end
+end
+
+downloadDistribution("https://raw.githubusercontent.com/igorkll/liked/main/installer")
