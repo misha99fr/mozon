@@ -71,7 +71,7 @@ local function fs_concat(...)
     for index, value in ipairs(set) do
         checkArg(index, value, "string")
     end
-    return filesystem.canonical(table.concat(set, "/"))
+    return canonical(table.concat(set, "/"))
 end
 
 local function cloneTo(folder, targetPath, targetDrive)
