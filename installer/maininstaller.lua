@@ -208,10 +208,24 @@ local function offline()
             cloneTo("/distributions/" .. v, "/", proxy)
         end})
     end
+    selectDist(dists)
 end
 
 local function online()
+    local dists = {}
     
+    local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
+    for i, v in ipairs(filelist) do
+        downloadDistribution(table.unpack(split(v, ";")))
+    end
+
+    for i, v in ipairs(drive.list("/distributions") or {}) do
+        table.insert(dists, {name = v, function(proxy)
+            cloneTo("/core", "/", proxy)
+            cloneTo("/distributions/" .. v, "/", proxy)
+        end})
+    end
+    selectDist(dists)
 end
 
 if internet then

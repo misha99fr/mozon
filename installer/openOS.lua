@@ -113,4 +113,7 @@ local function downloadDistribution(url, folder)
     end
 end
 
-downloadDistribution("https://raw.githubusercontent.com/igorkll/liked/main/installer")
+local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
+for i, v in ipairs(filelist) do
+    downloadDistribution(table.unpack(split(v, ";")))
+end
