@@ -240,6 +240,11 @@ local function selectDist(dists)
                 if menu("comfirm? the disk will be cleared!", {"NO", "Yes"}) == 2 then
                     status("Please Wait")
                     proxy.remove("/")
+                    local label = strs[num]
+                    if label == "core only" then
+                        label = "likeOS"
+                    end
+                    proxy.setLabel(label)
                     funcs[num](proxy)
                     if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                     if computer.setBootFile then computer.setBootFile("/init.lua") end
