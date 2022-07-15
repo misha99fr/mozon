@@ -204,11 +204,13 @@ local function getInstallDisk()
     local addresses = {}
 
     for address in component.list("filesystem") do
-        table.insert(strs, address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "noLabel"))
-        table.insert(addresses, address)
+        if not component.invoke(address, "isReadOnly") then
+            table.insert(strs, address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "noLabel"))
+            table.insert(addresses, address)
+        end
     end
     table.insert(strs, "back")
-    return addresses[menu("select disk", strs, 1)]
+    return component.proxy(addresses[menu("select disk", strs, 1)])
 end
 
 local function selectDist(dists)
