@@ -238,6 +238,7 @@ local function selectDist(dists)
             local proxy = getInstallDisk()
             if proxy then
                 status("Please Wait")
+                proxy.remove("/")
                 funcs[num](proxy)
                 if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                 if computer.setBootFile then computer.setBootFile("/init.lua") end
