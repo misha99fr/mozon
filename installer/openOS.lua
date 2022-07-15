@@ -1,6 +1,7 @@
 local fs = require("filesystem")
 local component = require("component")
 local term = require("term")
+local computer = require("computer")
 if not component.isAvailable("internet") then
     print("no internet card found")
     return
@@ -18,7 +19,7 @@ end
 local count = 1
 local variantes = {}
 for address in component.list("filesystem") do
-    if not component.invoke(address, "isReadOnly") then
+    if not component.invoke(address, "isReadOnly") and address ~= computer.tmpAddress() then
         print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
         count = count + 1
         table.insert(variantes, address)
@@ -49,6 +50,7 @@ fs.umount(mountPath)
 fs.mount(proxy, mountPath)
 
 proxy.remove("/")
+proxy.setLabel("")
 
 ------------------------------------
 
