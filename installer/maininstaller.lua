@@ -20,6 +20,9 @@ end
 local gpu = component.proxy((computer.getBootGpu and computer.getBootGpu() or getBestGPUOrScreenAddress("gpu")) or error("no gpu found", 0))
 local screen = (computer.getBootScreen and computer.getBootScreen() or getBestGPUOrScreenAddress("screen")) or error("no screen found", 0)
 gpu.bind(screen)
+local keyboards = component.invoke(screen, "getKeyboards")
+local rx, ry = gpu.getResolution()
+local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
 
@@ -87,3 +90,37 @@ end
 
 ------------------------------------
 
+local function isValideKeyboard(address)
+    for i, v in ipairs(keyboards) do
+        if v == address then
+            return true
+        end
+    end
+end
+
+------------------------------------
+
+local function invert()
+    gpu.setBackground(gpu.setForeground(gpu.getBackground()))
+end
+
+local function setText(str, posX, posY)
+    gpu.set((posX or 0) + math.floor(rx / 2 - ((#str - 1) / 2) + .5), posY or math.floor(ry / 2 + .5), str)
+end
+
+local function menu(label, strs, funcs, selected)
+    local selected = selected or 1
+    local function redraw()
+        invert()
+        setText(label, nil, 1)
+        invert()
+        for i, v in ipairs(strs) do
+            if selected == i then invert() end
+            setText(v, nil, i + 1)
+            if selected == i then invert() end
+        end
+    end
+    while true do
+        
+    end
+end
