@@ -204,29 +204,14 @@ end
 
 local function getInstallDisk()
     local strs = {}
-    local funcs = {}
+    local addresses = {}
 
     for address in component.list("filesystem")() do
-        table.insert(strs, v.name)
-        table.insert(funcs, v.call)
+        table.insert(strs, address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "noLabel"))
+        table.insert(addresses, address)
     end
     table.insert(strs, "back")
-
-    local num
-    while true do
-        num = menu("select disk", strs, num)
-        if funcs[num] then
-            local proxy = getInstallDisk()
-            if proxy then
-                funcs[num](proxy)
-                if computer.setBootAddress then computer.setBootAddress(proxy.address) end
-                if computer.setBootFile then computer.setBootFile("/init.lua") end
-                computer.shutdown(true)
-            else
-                break
-            end
-        end
-    end
+    return addresses[menu("select disk", strs, 1)]
 end
 
 local function selectDist(dists)
@@ -245,6 +230,7 @@ local function selectDist(dists)
         if funcs[num] then
             local proxy = getInstallDisk()
             if proxy then
+                status("Please Wait")
                 funcs[num](proxy)
                 if computer.setBootAddress then computer.setBootAddress(proxy.address) end
                 if computer.setBootFile then computer.setBootFile("/init.lua") end
