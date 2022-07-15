@@ -25,8 +25,9 @@ end
 local address = variantes[read]
 local proxy = component.proxy(address)
 
-local mountPath = "/free/tempMounts/"
+local mountPath = "/free/tempMounts/installdrive"
 fs.umount(mountPath)
+fs.mount(proxy, mountPath)
 
 ------------------------------------
 
@@ -77,7 +78,7 @@ for i, path in ipairs(filelist) do
     local full_url = url .. path
     local data = assert(getInternetFile(full_url))
 
-    local lpath = path
+    local lpath = fs.concat(mountPath, path)
     proxy.makeDirectory(fs.path(lpath))
     local file = io.open(lpath, "rb")
     file:write(data)
@@ -87,3 +88,10 @@ end
 proxy.makeDirectory("/boot/kernel")
 proxy.rename("/init.lua", "/boot/kernel/likemode")
 
+local file = io.open(fs.concat(mountPath, "init.lua"), "rb")
+file:write(assert(getInternetFile(url .. "/maininstaller.lua")))
+file:close()
+
+local file = io.open(fs.concat(mountPath, ".install"), "rb")
+file:write(assert(getInternetFile(url .. "/oschanger.lua")))
+file:close()
