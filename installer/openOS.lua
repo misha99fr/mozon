@@ -1,5 +1,6 @@
 local fs = require("filesystem")
 local component = require("component")
+local term = require("term")
 if not component.isAvailable("internet") then
     print("no internet card found")
     return
@@ -82,6 +83,12 @@ local function split(str, sep)
     end
     if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
     return parts
+end
+
+local function read()
+    local read = term.read()
+    if not read then return end
+    return read:sub(1, #read - 1)
 end
 
 local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
