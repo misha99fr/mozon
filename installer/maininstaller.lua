@@ -212,7 +212,7 @@ local function offline()
 end
 
 local function download(url, targetDrive)
-    local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+    local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
     for i, path in ipairs(filelist) do
         local full_url = url .. path
@@ -232,7 +232,8 @@ local function online()
     for i, v in ipairs(filelist) do
         local url, name = table.unpack(split(v, ";"))
         table.insert(dists, {name = name, call = function(proxy)
-            
+            download("https://raw.githubusercontent.com/igorkll/likeOS/main", proxy)
+            download(url, proxy)
         end})
     end
 

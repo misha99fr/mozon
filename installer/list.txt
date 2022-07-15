@@ -1,1 +1,1 @@
-https://raw.githubusercontent.com/igorkll/liked/main/installer;liked
+https://raw.githubusercontent.com/igorkll/liked/main;liked

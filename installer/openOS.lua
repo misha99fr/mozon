@@ -71,8 +71,8 @@ local function split(str, sep)
     return parts
 end
 
-local url = "https://raw.githubusercontent.com/igorkll/likeOS/main/installer"
-local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
+local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
 for i, path in ipairs(filelist) do
     local full_url = url .. path
@@ -99,7 +99,7 @@ file:close()
 -----------------------------------------------------------------------------
 
 local function downloadDistribution(url, folder)
-    local filelist = split(assert(getInternetFile(url .. "/filelist.txt")), "\n")
+    local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
     for i, path in ipairs(filelist) do
         local full_url = url .. path
