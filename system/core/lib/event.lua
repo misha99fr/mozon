@@ -36,8 +36,8 @@ event.isListen = false --если текуший код timer/listen
 
 ------------------------------------
 
-function event.tmpLog(data)
-    local file = assert(fs.open("/errorlog.txt", "ab"))
+function event.errLog(data)
+    local file = assert(fs.open("/errlog.log", "ab"))
     file.write(data .. "\n")
     file.close()
 end
@@ -151,7 +151,7 @@ function computer.pullSignal(time)
                     event.listens[index] = nil
                 end
             else
-                event.tmpLog((err or "unknown error") .. "\n")
+                event.errLog((err or "unknown error") .. "\n")
             end
         end
 
