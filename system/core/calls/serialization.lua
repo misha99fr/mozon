@@ -1,5 +1,10 @@
 local value, pretty = ...
 
+local local_pairs = function(tbl)
+    local mt = getmetatable(tbl)
+    return (mt and mt.__pairs or pairs)(tbl)
+end  
+
 local kw = {
     ["and"] = true,
     ["break"] = true,

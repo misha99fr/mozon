@@ -11,8 +11,8 @@ do --main
 
     ------------------------------------
 
-    _G._COREVERSION = "v0.2"
-    _G._COREVERSIONID = 2
+    _G._COREVERSION = "v0.3"
+    _G._COREVERSIONID = 3
 
     local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
         return setmetatable({_G = _G}, {__index = _G})
