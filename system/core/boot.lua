@@ -11,8 +11,8 @@ do --main
 
     ------------------------------------
 
-    _G._COREVERSION = "v0.3"
-    _G._COREVERSIONID = 3
+    _G._COREVERSION = "v0.5"
+    _G._COREVERSIONID = 4
 
     local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
         return setmetatable({_G = _G}, {__index = _G})
@@ -73,11 +73,11 @@ do --используйте автозагрузку для программ в�
     
             local func, err = programs.load(full_path)
             if not func then
-                event.tmpLog("err " .. (err or "unknown error") .. ", to load programm " .. full_path)
+                event.errLog("err " .. (err or "unknown error") .. ", to load programm " .. full_path)
             else
                 local ok, err = pcall(func)
                 if not ok then
-                    event.tmpLog("err " .. (err or "unknown error") .. ", in programm " .. full_path)
+                    event.errLog("err " .. (err or "unknown error") .. ", in programm " .. full_path)
                 end
             end        
         end

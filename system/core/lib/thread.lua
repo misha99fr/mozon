@@ -5,6 +5,7 @@ local event = require("event")
 local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
+thread.unloaded = true
 
 function coroutine.xpcall(co, ...)
     local output = {coroutine.resume(co, ...)}
@@ -102,11 +103,5 @@ function status(t)
     if not t.thread then return "dead" end
     return coroutine.status(t.thread)
 end
-
-------------------------------------кстыли
-
-event.timer(0.1, function() --сокрашяет время физического висения в pullSignal до 0.1
-    
-end, math.huge)
 
 return thread

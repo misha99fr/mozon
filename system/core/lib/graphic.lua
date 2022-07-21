@@ -7,6 +7,7 @@ local calls = require("calls")
 ------------------------------------
 
 local graphic = {}
+graphic.unloaded = true
 
 ------------------------------------class window
 

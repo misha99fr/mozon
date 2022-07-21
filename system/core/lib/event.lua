@@ -1,12 +1,13 @@
 local computer = require("computer")
 local fs = require("filesystem")
 local package = require("package")
+local component = require("component")
 
 ------------------------------------
 
 local raw_computer_pullSignal = computer.pullSignal
 local computer_pullSignal = function(time)
-    if package.loaded.thread and package.loaded.thread.current() then
+    if package.isLoaded("thread") and package.get("thread").current() then
         if not time then time = math.huge end
         local inTime = computer.uptime()
         repeat
@@ -37,7 +38,8 @@ event.isListen = false --если текуший код timer/listen
 ------------------------------------
 
 function event.errLog(data)
-    local file = assert(fs.open("/errlog.log", "ab"))
+    fs.makeDirectory("/data")
+    local file = assert(fs.open("/data/errorlog.log", "ab"))
     file.write(data .. "\n")
     file.close()
 end
@@ -72,6 +74,7 @@ function event.cancel(num)
     return ok
 end
 
+--[[
 event.oldinterrupttime = -math.huge
 function event.interrupt()
     if computer.uptime() - event.oldinterrupttime > 2 then
@@ -82,9 +85,10 @@ function event.interrupt()
         event.oldinterrupttime = computer.uptime()
     end
 end
+]]
 
 function event.callThreads(eventData)
-    local thread = package.loaded.thread
+    local thread = package.get("thread")
     if thread then
         local function find(tbl)
             local parsetbl = tbl.childs
@@ -112,7 +116,7 @@ function computer.pullSignal(time)
     end
     time = time or math.huge
     
-    local thread = package.loaded.thread
+    local thread = package.get("thread")
     if thread then
         local current = thread.current()
         if current then
@@ -127,13 +131,17 @@ function computer.pullSignal(time)
         local realtime = ltime
 
         --поиск времени до первого таймера, что обязательно на него успеть
-        for k, v in pairs(event.listens) do --нет ipairs неподайдет
-            if v.type == "t" and not v.killed then
-                local timerTime = v.time - (computer.uptime() - v.lastTime)
-                if timerTime < realtime then
-                    realtime = timerTime
+        if not package.isLoaded("thread") then
+            for k, v in pairs(event.listens) do --нет ipairs неподайдет
+                if v.type == "t" and not v.killed then
+                    local timerTime = v.time - (computer.uptime() - v.lastTime)
+                    if timerTime < realtime then
+                        realtime = timerTime
+                    end
                 end
             end
+        else
+            realtime = 0.1
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
@@ -151,7 +159,7 @@ function computer.pullSignal(time)
                     event.listens[index] = nil
                 end
             else
-                event.errLog((err or "unknown error") .. "\n")
+                event.errLog(err or "unknown error")
             end
         end
 
@@ -217,5 +225,69 @@ function event.pull(time, ...) --добавляет фильтер, не юза�
         end
     end
 end
+
+local currentUnloadState = true
+local function setUnloadState(state)
+    if currentUnloadState == state then return end
+    currentUnloadState = state
+    if state then
+        setmetatable(package.cache, {__mode = 'v'})
+        local calls = package.get("calls")
+        if calls then
+            setmetatable(calls.cache, {__mode = 'v'})
+        end
+    else
+        setmetatable(package.cache, {})
+        local calls = package.get("calls")
+        if calls then
+            setmetatable(calls.cache, {})
+        end
+    end
+end
+
+local oldFreeMemory = -math.huge
+event.timer(0.5, function()
+    local totalMemory = computer.totalMemory()
+    if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
+        setUnloadState(true)
+
+        local address, ctype = component.list("tablet")() --проверка, на устройста, в которых невозможно динамически менять оперативку
+        if not address then
+            address, ctype = component.list("robot")()
+            if not address then
+                address, ctype = component.list("drone")()
+                if not address then
+                    address, ctype = component.list("microcontroller")()
+                end
+            end
+        end
+        if address and ctype then
+            local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent
+            if not vcomponent then
+                return false
+            else
+                local unloadFlag = true
+                for i, v in ipairs(vcomponent.list()) do --если это будет виртуальный компонете, не отменять таймер
+                    if v[1] == address then
+                        unloadFlag = false
+                    end
+                end
+                if unloadFlag then
+                    return false
+                end
+            end
+        end
+    else
+        local freeMemory = computer.freeMemory()
+        if freeMemory > oldFreeMemory then --check GC
+            if freeMemory < computer.totalMemory() / 2 then
+                setUnloadState(true)
+            else
+                setUnloadState(false)
+            end
+        end
+        oldFreeMemory = freeMemory
+    end
+end, math.huge)
 
 return event

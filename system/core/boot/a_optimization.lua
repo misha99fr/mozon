@@ -3,11 +3,9 @@ local component = require("component")
 
 do --оптимизация для computer.getDeviceInfo
     computer.originalGetDeviceInfo = computer.getDeviceInfo
-    local deviceinfo = computer.originalGetDeviceInfo()
-
-    computer.deviceinfo = deviceinfo
+    computer.deviceinfo = computer.originalGetDeviceInfo()
     function computer.getDeviceInfo()
-        return deviceinfo
+        return computer.deviceinfo
     end
 end
 

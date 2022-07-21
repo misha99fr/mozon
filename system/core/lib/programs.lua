@@ -9,6 +9,7 @@ local event = require("event")
 
 local programs = {}
 programs.paths = {"/system/core/bin", "/system/bin"}
+programs.unloaded = true
 
 function programs.find(name)
     if unicode.sub(name, 1, 1) == "/" then
@@ -49,7 +50,7 @@ function programs.execute(name, ...)
     local code, err = programs.load(name)
     if not code then return nil, err end
 
-    local thread = package.loaded.thread
+    local thread = package.get("thread")
     if not thread then
         return pcall(code, ...)
     else

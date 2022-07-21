@@ -8,6 +8,8 @@ local unicode = unicode
 local package = {}
 package.paths = {"/system/core/lib", "/system/lib"}
 package.loaded = {package = package}
+package.cache = {}
+setmetatable(package.cache, {__mode = "v"})
 
 function package.find(name)
     if unicode.sub(name, 1, 1) == "/" then
@@ -26,7 +28,7 @@ function package.find(name)
 end
 
 function _G.require(name)
-    if not package.loaded[name] then
+    if not package.loaded[name] and not package.cache[name] then
         local finded = package.find(name)
         if not finded then
             error("lib " .. name .. " is not found", 0)
@@ -38,12 +40,25 @@ function _G.require(name)
         local data = file.readAll()
         file.close()
 
-        package.loaded[name] = assert(load(data, "=" .. finded, nil, calls.call("createEnv")))()
+        local lib = assert(load(data, "=" .. finded, nil, calls.call("createEnv")))()
+        if type(lib) == "table" and lib.unloaded then
+            package.cache[name] = lib
+        else
+            package.loaded[name] = lib
+        end
     end
-    if not package.loaded[name] then
+    if not package.loaded[name] and not package.cache[name] then
         error("lib " .. name .. " is not found" , 0)
     end
-    return package.loaded[name]
+    return package.loaded[name] or package.cache[name]
+end
+
+function package.get(name)
+    return package.loaded[name] or package.cache[name]
+end
+
+function package.isLoaded(name)
+    return not not package.get(name)
 end
 
 ------------------------------------
