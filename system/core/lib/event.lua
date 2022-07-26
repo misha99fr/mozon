@@ -245,37 +245,40 @@ local function setUnloadState(state)
     end
 end
 
+do
+    event.dmem = true
+    local address, ctype = component.list("tablet")() --проверка, на устройста, в которых невозможно динамически менять оперативку
+    if not address then
+        address, ctype = component.list("robot")()
+        if not address then
+            address, ctype = component.list("drone")()
+            if not address then
+                address, ctype = component.list("microcontroller")()
+            end
+        end
+    end
+    if address and ctype then
+        local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent
+        if not vcomponent then
+            event.dmem = false
+        else
+            for i, v in ipairs(vcomponent.list()) do --если это будет виртуальный компонете, не отменять таймер
+                if v[1] == address then
+                    event.dmem = false
+                    break
+                end
+            end
+        end
+    end
+end
+
 local oldFreeMemory = -math.huge
 event.timer(0.5, function()
     local totalMemory = computer.totalMemory()
     if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
         setUnloadState(true)
-
-        local address, ctype = component.list("tablet")() --проверка, на устройста, в которых невозможно динамически менять оперативку
-        if not address then
-            address, ctype = component.list("robot")()
-            if not address then
-                address, ctype = component.list("drone")()
-                if not address then
-                    address, ctype = component.list("microcontroller")()
-                end
-            end
-        end
-        if address and ctype then
-            local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent
-            if not vcomponent then
-                return false
-            else
-                local unloadFlag = true
-                for i, v in ipairs(vcomponent.list()) do --если это будет виртуальный компонете, не отменять таймер
-                    if v[1] == address then
-                        unloadFlag = false
-                    end
-                end
-                if unloadFlag then
-                    return false
-                end
-            end
+        if not event.dmem then
+            return false
         end
     else
         local freeMemory = computer.freeMemory()

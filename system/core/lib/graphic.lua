@@ -11,31 +11,7 @@ graphic.unloaded = true
 
 ------------------------------------class window
 
-local window = {}
-window.__index = window
-
-function window:new(screen, x, y, sizeX, sizeY, selected)
-    local obj = {
-        screen = screen,
-        x = x,
-        y = y,
-        sizeX = sizeX,
-        sizeY = sizeY,
-        cursorX = 1,
-        cursorY = 1,
-    }
-    if selected ~= nil then
-        obj.selected = selected
-    else
-        local gpu = graphic.findGpu(screen)
-        obj.selected = gpu and gpu.getDepth() == 1
-    end
-
-    setmetatable(obj, self)
-    return obj
-end
-
-function window:set(x, y, background, foreground, text)
+local function set(self, x, y, background, foreground, text)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background)
@@ -44,7 +20,7 @@ function window:set(x, y, background, foreground, text)
     end
 end
 
-function window:fill(x, y, sizeX, sizeY, background, foreground, char)
+local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background)
@@ -53,26 +29,26 @@ function window:fill(x, y, sizeX, sizeY, background, foreground, char)
     end
 end
 
-function window:copy(x, y, sizeX, sizeY, offsetX, offsetY)
+local function copy(self, x, y, sizeX, sizeY, offsetX, offsetY)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
     end
 end
 
-function window:clear(color)
+local function clear(self, color)
     self:fill(1, 1, self.sizeX, self.sizeY, color, 0, " ")
 end
 
-function window:setCursor(x, y)
+local function setCursor(self, x, y)
     self.cursorX, self.cursorY = x, y
 end
 
-function window:getCursor()
+local function getCursor(self)
     return self.cursorX, self.cursorY
 end
 
-function window:write(data, background, foreground)
+local function write(self, data, background, foreground)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background or 0)
@@ -91,7 +67,7 @@ function window:write(data, background, foreground)
     end
 end
 
-function window:uploadEvent(eventData)
+local function uploadEvent(self, eventData)
     local newEventData = {} --пустая таблица, чтобы не чекать на nil
     if eventData then
         if eventData[2] == self.screen and
@@ -127,11 +103,11 @@ function window:uploadEvent(eventData)
     return {}
 end
 
-function window:toRealPos(x, y)
+local function toRealPos(self, x, y)
     return self.x + (x - 1), self.y + (y - 1)
 end
 
-function window:read(x, y, sizeX, background, foreground, preStr, crypto)
+local function read(self, x, y, sizeX, background, foreground, preStr, crypto)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = ""
     local function redraw()
@@ -194,6 +170,40 @@ function window:read(x, y, sizeX, background, foreground, preStr, crypto)
         return buffer
     end}
 end
+
+function graphic.createWindow(screen, x, y, sizeX, sizeY, selected)
+    local obj = {
+        screen = screen,
+        x = x,
+        y = y,
+        sizeX = sizeX,
+        sizeY = sizeY,
+        cursorX = 1,
+        cursorY = 1,
+
+        read = read,
+        toRealPos = toRealPos,
+        set = set,
+        fill = fill,
+        copy = copy,
+        clear = clear,
+        uploadEvent = uploadEvent,
+        write = write,
+        getCursor = getCursor,
+        setCursor = setCursor
+    }
+    if selected ~= nil then
+        obj.selected = selected
+    else
+        local gpu = graphic.findGpu(screen)
+        obj.selected = gpu and gpu.getDepth() == 1
+    end
+
+    setmetatable(obj, self)
+    return obj
+end
+
+
 
 graphic.classWindow = window
 

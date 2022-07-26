@@ -13,19 +13,24 @@ programs.unloaded = true
 
 function programs.find(name)
     if unicode.sub(name, 1, 1) == "/" then
-        return name
+        if fs.exists(name) then
+            if fs.isDirectory(name) then
+                if fs.exists(paths.concat(name, "main.lua")) then
+                    return paths.concat(name, "main.lua")
+                end
+            else
+                return name
+            end
+        end
     else
         for i, v in ipairs(programs.paths) do
-            local path = paths.concat(v, name)
-            if fs.exists(path .. ".lua") and not fs.isDirectory(path .. ".lua") then
-                return path .. ".lua"
-            else
-                if fs.exists(path .. ".app") and fs.isDirectory(path .. ".app") then
-                    path = paths.concat(path .. ".app", "main.lua")
-                    if fs.exists(path) and not fs.isDirectory(path) then
-                        return path
-                    end
-                end
+            if fs.exists(paths.concat(v, name .. ".lua")) and
+            not fs.isDirectory(paths.concat(v, name .. ".lua")) then
+                return paths.concat(v, name .. ".lua")
+            elseif fs.exists(paths.concat(v, name, "main.lua")) and
+            fs.isDirectory(paths.concat(v, name)) and
+            not fs.isDirectory(paths.concat(v, name, "main.lua")) then
+                return paths.concat(v, name, "main.lua")
             end
         end
     end

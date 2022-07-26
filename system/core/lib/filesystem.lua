@@ -107,18 +107,22 @@ function filesystem.list(path)
 	local tbl = proxy.list(proxyPath)
 
 	if tbl then
+		tbl.n = nil
 		for i = 1, #filesystem.mountList do
 			if paths.canonical(path) == paths.path(filesystem.mountList[i][2]) then
 				table.insert(tbl, paths.name(filesystem.mountList[i][2]))
 			end
 		end
-		tbl.n = #tbl
 		table.sort(tbl)
 	end
 	return tbl
 end
 
 function filesystem.rename(fromPath, toPath)
+	fromPath = paths.canonical(fromPath)
+	toPath = paths.canonical(toPath)
+	if fromPath == toPath then return end
+
 	local fromProxy, fromProxyPath = filesystem.get(fromPath)
 	local toProxy, toProxyPath = filesystem.get(toPath)
 
@@ -159,9 +163,9 @@ function filesystem.open(path, mode)
 end
 
 function filesystem.copy(fromPath, toPath)
-	if paths.canonical(fromPath) == paths.canonical(toPath) then
-		return
-	end
+	fromPath = paths.canonical(fromPath)
+	toPath = paths.canonical(toPath)
+	if fromPath == toPath then return end
 	local function copyRecursively(fromPath, toPath)
 		if filesystem.isDirectory(fromPath) then
 			filesystem.makeDirectory(toPath)
