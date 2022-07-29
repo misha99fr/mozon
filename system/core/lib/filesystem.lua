@@ -114,8 +114,10 @@ function filesystem.list(path)
 			end
 		end
 		table.sort(tbl)
+		return tbl
+	else
+		return {}
 	end
-	return tbl
 end
 
 function filesystem.rename(fromPath, toPath)

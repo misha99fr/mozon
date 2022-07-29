@@ -8,7 +8,7 @@ local event = require("event")
 ------------------------------------
 
 local programs = {}
-programs.paths = {"/system/core/bin", "/system/bin"}
+programs.paths = {"/system/core/bin", "/system/bin", "/data/bin"}
 programs.unloaded = true
 
 function programs.find(name)
@@ -24,13 +24,16 @@ function programs.find(name)
         end
     else
         for i, v in ipairs(programs.paths) do
-            if fs.exists(paths.concat(v, name .. ".lua")) and
-            not fs.isDirectory(paths.concat(v, name .. ".lua")) then
-                return paths.concat(v, name .. ".lua")
-            elseif fs.exists(paths.concat(v, name, "main.lua")) and
-            fs.isDirectory(paths.concat(v, name)) and
-            not fs.isDirectory(paths.concat(v, name, "main.lua")) then
-                return paths.concat(v, name, "main.lua")
+            local path = paths.concat(v, name)
+            if fs.exists(path .. ".lua") and not fs.isDirectory(path .. ".lua") then
+                return path .. ".lua"
+            else
+                if fs.exists(path .. ".app") and fs.isDirectory(path .. ".app") then
+                    path = paths.concat(path .. ".app", "main.lua")
+                    if fs.exists(path) and not fs.isDirectory(path) then
+                        return path
+                    end
+                end
             end
         end
     end

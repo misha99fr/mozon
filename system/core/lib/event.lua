@@ -262,17 +262,21 @@ do
         if not vcomponent then
             event.dmem = false
         else
+            local off = true
             for i, v in ipairs(vcomponent.list()) do --если это будет виртуальный компонете, не отменять таймер
                 if v[1] == address then
-                    event.dmem = false
+                    off = false
                     break
                 end
+            end
+            if off then
+                event.dmem = false
             end
         end
     end
 end
 
-local oldFreeMemory = -math.huge
+local oldFreeMemory = computer.freeMemory()
 event.timer(0.5, function()
     local totalMemory = computer.totalMemory()
     if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
@@ -283,7 +287,7 @@ event.timer(0.5, function()
     else
         local freeMemory = computer.freeMemory()
         if freeMemory > oldFreeMemory then --check GC
-            if freeMemory < computer.totalMemory() / 2 then
+            if freeMemory < totalMemory / 2 then
                 setUnloadState(true)
             else
                 setUnloadState(false)

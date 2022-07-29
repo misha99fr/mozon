@@ -1,0 +1,1 @@
+return table.concat(split(";asd;;123123;00;;;;0l;;;", ";"), " ") == " asd  123123 00    0l   "

@@ -117,7 +117,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto)
             gpu.setForeground(foreground)
             local newBuffer = buffer
             if crypto then
-                newBuffer = string.rep("*", unicode.len(crypto))
+                newBuffer = string.rep("*", unicode.len(newBuffer))
             end
             
             local str = (preStr or "") .. newBuffer .. "_"

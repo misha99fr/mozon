@@ -11,8 +11,8 @@ do --main
 
     ------------------------------------
 
-    _G._COREVERSION = "v0.6"
-    _G._COREVERSIONID = 6
+    _G._COREVERSION = "v0.7"
+    _G._COREVERSIONID = 7
 
     local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
         return setmetatable({_G = _G}, {__index = _G})
@@ -47,7 +47,7 @@ do --unittests
     local programs = require("programs")
 
     local function unittests(path)
-        for _, file in ipairs(fs.list(path) or {}) do
+        for _, file in ipairs(fs.list(path)) do
             local lpath = paths.concat(path, file)
             local ok, state, log = assert(programs.execute(lpath))
             if not ok then
@@ -59,6 +59,7 @@ do --unittests
     end
     unittests("/system/core/unittests")
     unittests("/system/unittests")
+    unittests("/data/unittests")
 end
 
 do --используйте автозагрузку для программ выполняешихся быстно, и не требуюших взаимодействий
@@ -68,7 +69,7 @@ do --используйте автозагрузку для программ в�
     local programs = require("programs")
 
     local function autorunsIn(path)
-        for i, v in ipairs(fs.list(path) or {}) do
+        for i, v in ipairs(fs.list(path)) do
             local full_path = paths.concat(path, v)
     
             local func, err = programs.load(full_path)
@@ -84,6 +85,7 @@ do --используйте автозагрузку для программ в�
     end
     autorunsIn("/system/core/autoruns")
     autorunsIn("/system/autoruns")
+    autorunsIn("/data/autoruns")
 end
 
 do --используйте main.lua для запуска оболочьки, или основной программы

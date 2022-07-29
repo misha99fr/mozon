@@ -6,7 +6,7 @@ local unicode = unicode
 ------------------------------------
 
 local package = {}
-package.paths = {"/system/core/lib", "/system/lib"}
+package.paths = {"/system/core/lib", "/system/lib", "/data/lib"}
 package.loaded = {package = package}
 package.cache = {}
 setmetatable(package.cache, {__mode = "v"})
