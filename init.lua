@@ -23,6 +23,8 @@ likeOS разпостраняеться без лиценции по этому 
 /data - данные ос
 ]]
 
+_G._COREVERSION = "v0.8"
+
 local bootaddress, invoke = computer.getBootAddress(), component.invoke
 local function raw_loadfile(path, mode, env)
     local file, err = invoke(bootaddress, "open", path, "rb")

@@ -199,13 +199,8 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected)
         obj.selected = gpu and gpu.getDepth() == 1
     end
 
-    setmetatable(obj, self)
     return obj
 end
-
-
-
-graphic.classWindow = window
 
 ------------------------------------
 
