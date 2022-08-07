@@ -92,7 +92,10 @@ end
 function paths.extension(path)
 	local data = path:match("[^%/]+(%.[^%/]+)%/?$")
     if data then
-        return unicode.sub(data, 2, unicode.len(data))
+        local str = unicode.sub(data, 2, unicode.len(data))
+        if #str then
+            return str
+        end
     end
     return nil
 end

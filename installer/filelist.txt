@@ -33,4 +33,6 @@
 /system/core/calls/getRealTime.lua
 /system/core/calls/readbit.lua
 /system/core/calls/toParts.lua
+/system/core/calls/toPartsUnicode.lua
+/system/core/calls/uuid.lua
 /init.lua

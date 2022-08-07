@@ -18,7 +18,7 @@ local function getPath()
 end
 local driveAddress = fs.get(assert(getPath())).address
 
-if not computer.getBootAddress then
+if not computer.setBootAddress then
     print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска через биос, инструкция должна быть написана в описании вашего биоса")
     return
 end

@@ -48,22 +48,42 @@ local function getCursor(self)
     return self.cursorX, self.cursorY
 end
 
-local function write(self, data, background, foreground)
+local function write(self, data, background, foreground, autoln)
     local gpu = graphic.findGpu(self.screen)
+
     if gpu then
+        local buffer = ""
+        local setX, setY = self.cursorX, self.cursorY
+        local function applyBuffer()
+            gpu.set(self.x + (setX - 1), self.y + (setY - 1), buffer)
+            buffer = ""
+            setX, setY = self.cursorX, self.cursorY
+        end
+
         gpu.setBackground(background or 0)
         gpu.setForeground(foreground or 0xFFFFFF)
 
         for i = 1, unicode.len(data) do
             local char = unicode.sub(data, i, i)
-            if char == "\n" then
-                self.cursorY = self.cursorY + 1
-                self.cursorX = 1
-            else
-                gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
+            local ln = autoln and self.cursorX > self.sizeX
+            local function setChar()
+                --gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
+                buffer = buffer .. char
                 self.cursorX = self.cursorX + 1
             end
+            if char == "\n" or ln then
+                self.cursorY = self.cursorY + 1
+                self.cursorX = 1
+                applyBuffer()
+                if ln then
+                    setChar()
+                end
+            else
+                setChar()
+            end
         end
+
+        applyBuffer()
     end
 end
 
@@ -107,9 +127,9 @@ local function toRealPos(self, x, y)
     return self.x + (x - 1), self.y + (y - 1)
 end
 
-local function read(self, x, y, sizeX, background, foreground, preStr, crypto)
+local function read(self, x, y, sizeX, background, foreground, preStr, crypto, buffer)
     local keyboards = component.invoke(self.screen, "getKeyboards")
-    local buffer = ""
+    local buffer = buffer or ""
     local function redraw()
         local gpu = graphic.findGpu(self.screen)
         if gpu then
@@ -149,16 +169,16 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto)
             if ok and self.selected then
                 if eventData[4] == 28 then
                     return buffer
-                elseif eventData[3] >= 32 and eventData[3] <= 126 then
-                    buffer = buffer .. string.char(eventData[3])
-                    redraw()
                 elseif eventData[4] == 14 then
                     if #buffer > 0 then
                         buffer = unicode.sub(buffer, 1, unicode.len(buffer) - 1)
                         redraw()
                     end
-                elseif eventData[4] == 46 then
+                elseif eventData[3] == 3 and eventData[4] == 46 then
                     return true --exit ctrl + c
+                elseif eventData[3] > 0 then
+                    buffer = buffer .. unicode.char(eventData[3])
+                    redraw()
                 end
             end
         elseif eventData[1] == "clipboard" and not crypto then
@@ -168,6 +188,8 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto)
         end
     end, redraw = redraw, getBuffer = function()
         return buffer
+    end, setBuffer = function(v)
+        buffer = v
     end}
 end
 
