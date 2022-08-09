@@ -226,6 +226,8 @@ end
 
 ------------------------------------
 
+graphic.gpuPrivateList = {} --для приватизации видеокарт, дабы избежать "кражи" другими процессами, добовляйте так graphic.gpuPrivateList[gpuAddress] = true
+
 --local bindCache = {}
 function graphic.findGpu(screen)
     --от кеша слишком много проблемм, а findGpu и так довольно быстрая, за счет оптимизированого getDeviceInfo
@@ -236,7 +238,7 @@ function graphic.findGpu(screen)
     local bestGpuLevel, gpuLevel, bestGpu = 0
     local function check(deep)
         for address in component.list("gpu") do
-            if deep or component.invoke(address, "getScreen") == screen then
+            if not graphic.gpuPrivateList[address] and deep or component.invoke(address, "getScreen") == screen then
                 gpuLevel = tonumber(deviceinfo[address].capacity) or 0
                 if component.invoke(address, "getScreen") == screen and gpuLevel == screenLevel then --уже подключенная видео карта, казырный туз, но только если она того же уровня что и монитор!
                     gpuLevel = gpuLevel + 99999999999999999999

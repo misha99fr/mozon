@@ -16,7 +16,6 @@
 /system/core/unittests/c_calls_split_test.lua
 /system/core/boot/b_event.lua
 /system/core/boot/a_optimization.lua
-/system/core/boot/c_base.lua
 /system/core/calls/getInternetFile.lua
 /system/core/calls/getGameTime.lua
 /system/core/calls/unserialization.lua

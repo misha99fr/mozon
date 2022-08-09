@@ -8,16 +8,16 @@ event.listen(nil, function(eventType, uuid, ctype) --тут происходит
         if timer then
             event.cancel(timer)
         end
-        timer = event.timer(1, function()
-            timer = nil
-            computer.deviceinfo = computer.originalGetDeviceInfo()
-            if isKeyboard then
-                component.refreshKeyboard()
-            end
-            isKeyboard = nil
-        end, 1)
         if ctype == "keyboard" then
             isKeyboard = true
         end
+        timer = event.timer(1, function()
+            timer = nil
+            computer.deviceinfo = nil
+            if isKeyboard then
+                component.refreshKeyboards()
+            end
+            isKeyboard = nil
+        end, 1)
     end
 end)

@@ -29,5 +29,58 @@ end
 
 colors.silver = colors.lightGray
 colors.lightGreen = colors.lime
+
+function colors.hsvToRgb(h, s, v)
+    h = h / 255
+    s = s / 255
+    v = v / 255
+
+    local r, g, b
+
+    local i = math.floor(h * 6);
+
+    local f = h * 6 - i;
+    local p = v * (1 - s);
+    local q = v * (1 - f * s);
+    local t = v * (1 - (1 - f) * s);
+
+    i = math.floor(i % 6)
+
+    if i == 0 then
+        r, g, b = v, t, p
+    elseif i == 1 then
+        r, g, b = q, v, p
+    elseif i == 2 then
+        r, g, b = p, v, t
+    elseif i == 3 then
+        r, g, b = p, q, v
+    elseif i == 4 then
+        r, g, b = t, p, v
+    elseif i == 5 then
+        r, g, b = v, p, q
+    end
+
+    r = math.floor(r * 255)
+    g = math.floor(g * 255)
+    b = math.floor(b * 255)
+
+    return r, g, b
+end
+
+function colors.blend(r, g, b)
+    r = math.floor(r)
+    g = math.floor(g)
+    b = math.floor(b)
+    return math.floor(b + (g * 256) + (r * 256 * 256))
+end
+
+function colors.unBlend(color)
+    color =  math.floor(color)
+    local blue = color % 256
+    local green = (color // 256) % 256
+    local red = (color // (256 * 256)) % 256
+    return math.floor(red), math.floor(green), math.floor(blue)
+end
+
 colors.unloaded = true
 return colors
