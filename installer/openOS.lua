@@ -144,7 +144,7 @@ local function installTo(address, auto, offlineMode)
     print("создания загрузочьного диска завершено")
 end
 
-if index == 1 then
+if index == "1" then
     local count = 1
     local variantes = {}
     for address in component.list("filesystem") do
@@ -170,7 +170,7 @@ if index == 1 then
     if not read then return end
 
     installTo(address, false, read:lower() == "y")
-elseif index == 2 then
+elseif index == "2" then
     installTo(computer.tmpAddress(), true, false)
 
     local driveAddress = computer.tmpAddress()
@@ -188,4 +188,6 @@ elseif index == 2 then
         computer.setBootFile("/init.lua")
     end
     computer.shutdown("fast")
+else
+    print("нету этого режима")
 end
