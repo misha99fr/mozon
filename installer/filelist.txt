@@ -34,4 +34,8 @@
 /system/core/calls/toParts.lua
 /system/core/calls/toPartsUnicode.lua
 /system/core/calls/uuid.lua
+/system/core/calls/movetable.lua
+/system/core/lib/vcomponent.lua
+/system/core/calls/getFile.lua
+/system/core/calls/saveFile.lua
 /init.lua

@@ -3,6 +3,7 @@ local computer = require("computer")
 local unicode = require("unicode")
 local event = require("event")
 local calls = require("calls")
+local colors = require("colors")
 
 ------------------------------------
 
@@ -14,8 +15,8 @@ graphic.unloaded = true
 local function set(self, x, y, background, foreground, text)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        gpu.setBackground(background)
-        gpu.setForeground(foreground)
+        gpu.setBackground(background, self.isPal)
+        gpu.setForeground(foreground, self.isPal)
         gpu.set(self.x + (x - 1), self.y + (y - 1), text)
     end
 end
@@ -23,8 +24,8 @@ end
 local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        gpu.setBackground(background)
-        gpu.setForeground(foreground)
+        gpu.setBackground(background, self.isPal)
+        gpu.setForeground(foreground, self.isPal)
         gpu.fill(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, char)
     end
 end
@@ -60,8 +61,8 @@ local function write(self, data, background, foreground, autoln)
             setX, setY = self.cursorX, self.cursorY
         end
 
-        gpu.setBackground(background or 0)
-        gpu.setForeground(foreground or 0xFFFFFF)
+        gpu.setBackground(background or (self.isPal and colors.black or 0), self.isPal)
+        gpu.setForeground(foreground or (self.isPal and colors.white or 0xFFFFFF), self.isPal)
 
         for i = 1, unicode.len(data) do
             local char = unicode.sub(data, i, i)
@@ -133,8 +134,8 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
     local function redraw()
         local gpu = graphic.findGpu(self.screen)
         if gpu then
-            gpu.setBackground(background)
-            gpu.setForeground(foreground)
+            gpu.setBackground(background, self.isPal)
+            gpu.setForeground(foreground, self.isPal)
             local newBuffer = buffer
             if crypto then
                 newBuffer = string.rep("*", unicode.len(newBuffer))
@@ -193,7 +194,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
     end}
 end
 
-function graphic.createWindow(screen, x, y, sizeX, sizeY, selected)
+function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
     local obj = {
         screen = screen,
         x = x,
@@ -212,7 +213,8 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected)
         uploadEvent = uploadEvent,
         write = write,
         getCursor = getCursor,
-        setCursor = setCursor
+        setCursor = setCursor,
+        isPal = isPal or false,
     }
     if selected ~= nil then
         obj.selected = selected
@@ -274,5 +276,75 @@ event.listen(nil, function(eventType, _, ctype)
     end
 end)
 ]]
+
+function graphic.getResolution(screen)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.getResolution()
+    end
+end
+
+function graphic.maxResolution(screen)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.maxResolution()
+    end
+end
+
+function graphic.setResolution(screen, x, y)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.setResolution(x, y)
+    end
+end
+
+function graphic.setPaletteColor(screen, i, v)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.setPaletteColor(i, v)
+    end
+end
+
+function graphic.getPaletteColor(screen, i)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.getPaletteColor(i)
+    end
+end
+
+function graphic.getDepth(screen)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.getDepth()
+    end
+end
+
+function graphic.setDepth(screen, v)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.setDepth(v)
+    end
+end
+
+function graphic.maxDepth(screen)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.maxDepth()
+    end
+end
+
+function graphic.getViewport(screen)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.getViewport()
+    end
+end
+
+function graphic.setViewport(screen, x, y)
+    local gpu = graphic.findGpu(screen)
+    if gpu then
+        return gpu.setViewport(x, y)
+    end
+end
 
 return graphic

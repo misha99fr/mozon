@@ -18,131 +18,174 @@ local function readFunc(alternativeSplast)
     return read:sub(1, #read - 1)
 end
 
-------------------------------------
+print("вас приветствует мастер создания загрузочьного диска likeOS")
+print("выберите режим")
+print("1. создать устоновочьный диск")
+print("2. устоновить устоновшик в tmpfs и перезагрузиться туда(tmpfs будет очишенна)")
+local index = readFunc(true)
+if not index then
+    return
+end
 
-local count = 1
-local variantes = {}
-for address in component.list("filesystem") do
-    if not component.invoke(address, "isReadOnly") and address ~= computer.tmpAddress() and address ~= fs.get("/").address then
-        print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
-        count = count + 1
-        table.insert(variantes, address)
+local function installTo(address, auto, offlineMode)
+    local proxy = component.proxy(address)
+
+    if not auto then
+        print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
+        print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+
+        local ok = readFunc()
+        if not ok or ok:lower() ~= "y" then
+            return
+        end
     end
-end
 
-print("выберите диск который хотите сделать устоновочьным")
-print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
-local read = readFunc(true)
-if not read then return end
-if not tonumber(read) then
-    print("invalide input")
-    return
-end
-local address = variantes[tonumber(read)]
-local proxy = component.proxy(address)
+    local mountPath = "/free/tempMounts/installdrive"
+    fs.umount(mountPath)
+    fs.mount(proxy, mountPath)
 
-print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
-print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+    proxy.remove("/")
+    proxy.setLabel("likeOS installer v1.1")
 
-local ok = readFunc()
-if not ok or ok:lower() ~= "y" then
-    return
-end
+    ------------------------------------
 
-local mountPath = "/free/tempMounts/installdrive"
-fs.umount(mountPath)
-fs.mount(proxy, mountPath)
-
-proxy.remove("/")
-proxy.setLabel("likeOS installer v1.0")
-
-------------------------------------
-
-local function getInternetFile(url)
-    local handle, data, result, reason = component.internet.request(url), ""
-    if handle then
-        while true do
-            result, reason = handle.read(math.huge) 
-            if result then
-                data = data .. result
-            else
-                handle.close()
-                
-                if reason then
-                    return nil, reason
+    local function getInternetFile(url)
+        local handle, data, result, reason = component.internet.request(url), ""
+        if handle then
+            while true do
+                result, reason = handle.read(math.huge) 
+                if result then
+                    data = data .. result
                 else
-                    return data
+                    handle.close()
+                    
+                    if reason then
+                        return nil, reason
+                    else
+                        return data
+                    end
                 end
             end
-        end
-    else
-        return nil, "unvalid address"
-    end
-end
-
-local function split(str, sep)
-    local parts, count, i = {}, 1, 1
-    while 1 do
-        if i > #str then break end
-        local char = str:sub(i, i - 1 + #sep)
-        if not parts[count] then parts[count] = "" end
-        if char == sep then
-            count = count + 1
-            i = i + #sep
         else
-            parts[count] = parts[count] .. str:sub(i, i)
-            i = i + 1
+            return nil, "unvalid address"
         end
     end
-    if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
-    return parts
-end
 
-local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
-local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
-
-for i, path in ipairs(filelist) do
-    local full_url = url .. path
-    local data = assert(getInternetFile(full_url))
-
-    local lpath = fs.concat(mountPath, "core", path)
-    fs.makeDirectory(fs.path(lpath))
-    local file = assert(io.open(lpath, "wb"))
-    file:write(data)
-    file:close()
-end
-
-proxy.makeDirectory("/boot/kernel")
-proxy.rename("/init.lua", "/boot/kernel/likemode")
-
-local file = io.open(fs.concat(mountPath, "init.lua"), "wb")
-file:write(assert(getInternetFile(url .. "/installer/maininstaller.lua")))
-file:close()
-
-local file = io.open(fs.concat(mountPath, ".install"), "wb")
-file:write(assert(getInternetFile(url .. "/installer/oschanger.lua")))
-file:close()
-
------------------------------------------------------------------------------
-
-local function downloadDistribution(url, folder)
-    local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
-
-    for i, path in ipairs(filelist) do
-        local full_url = url .. path
-        local data = assert(getInternetFile(full_url))
-
-        local lpath = fs.concat(mountPath, "distributions", folder, path)
-        fs.makeDirectory(fs.path(lpath))
-        local file = assert(io.open(lpath, "wb"))
-        file:write(data)
-        file:close()
+    local function split(str, sep)
+        local parts, count, i = {}, 1, 1
+        while 1 do
+            if i > #str then break end
+            local char = str:sub(i, i - 1 + #sep)
+            if not parts[count] then parts[count] = "" end
+            if char == sep then
+                count = count + 1
+                i = i + #sep
+            else
+                parts[count] = parts[count] .. str:sub(i, i)
+                i = i + 1
+            end
+        end
+        if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
+        return parts
     end
+
+    local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
+
+    if offlineMode then
+        local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
+
+        for i, path in ipairs(filelist) do
+            local full_url = url .. path
+            local data = assert(getInternetFile(full_url))
+
+            local lpath = fs.concat(mountPath, "core", path)
+            fs.makeDirectory(fs.path(lpath))
+            local file = assert(io.open(lpath, "wb"))
+            file:write(data)
+            file:close()
+        end
+
+        --proxy.makeDirectory("/boot/kernel")
+        --proxy.rename("/init.lua", "/boot/kernel/likemode")
+    end
+
+    local file = io.open(fs.concat(mountPath, "init.lua"), "wb")
+    file:write(assert(getInternetFile(url .. "/installer/maininstaller.lua")))
+    file:close()
+
+    local file = io.open(fs.concat(mountPath, ".install"), "wb")
+    file:write(assert(getInternetFile(url .. "/installer/oschanger.lua")))
+    file:close()
+
+    -----------------------------------------------------------------------------
+
+    if offlineMode then
+        local function downloadDistribution(url, folder)
+            local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
+
+            for i, path in ipairs(filelist) do
+                local full_url = url .. path
+                local data = assert(getInternetFile(full_url))
+
+                local lpath = fs.concat(mountPath, "distributions", folder, path)
+                fs.makeDirectory(fs.path(lpath))
+                local file = assert(io.open(lpath, "wb"))
+                file:write(data)
+                file:close()
+            end
+        end
+
+        local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
+        for i, v in ipairs(filelist) do
+            downloadDistribution(table.unpack(split(v, ";")))
+        end
+    end
+
+    print("создания загрузочьного диска завершено")
 end
 
-local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
-for i, v in ipairs(filelist) do
-    downloadDistribution(table.unpack(split(v, ";")))
-end
+if index == 1 then
+    local count = 1
+    local variantes = {}
+    for address in component.list("filesystem") do
+        if not component.invoke(address, "isReadOnly") and address ~= computer.tmpAddress() and address ~= fs.get("/").address then
+            print(tostring(count) .. ". " .. address:sub(1, 4) .. " label: " .. (component.invoke(address, "getLabel") or ""))
+            count = count + 1
+            table.insert(variantes, address)
+        end
+    end
 
-print("создания загрузочьного диска завершено")
+    print("выберите диск который хотите сделать устоновочьным")
+    print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+    local read = readFunc(true)
+    if not read then return end
+    if not tonumber(read) then
+        print("invalide input")
+        return
+    end
+    local address = variantes[tonumber(read)]
+
+    print("добавить на диск дистрибутивы и ядро для устоновки без internet card?(создания диска будет долгим)")
+    local read = readFunc()
+    if not read then return end
+
+    installTo(address, false, read:lower() == "y")
+elseif index == 2 then
+    installTo(computer.tmpAddress(), true, false)
+
+    local driveAddress = computer.tmpAddress()
+
+    if not computer.setBootAddress then
+        print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска(tmpfs) через биос, инструкция должна быть написана в описании вашего биоса")
+        if component.isAvailable("eeprom") then
+            print("ваш биос был определен как \"" .. (component.eeprom.getLabel() or "unknown") .. "\"")
+        end
+        return
+    end
+    
+    computer.setBootAddress(driveAddress)
+    if computer.setBootFile then
+        computer.setBootFile("/init.lua")
+    end
+    computer.shutdown("fast")
+end

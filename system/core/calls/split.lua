@@ -1,3 +1,9 @@
+--[[
+    input: ":123::123::"
+    sep : ":"
+    output : {"", "123", "", "123", "", ""}
+]]
+
 local function split(str, sep)
     local parts, count, i = {}, 1, 1
     while 1 do

@@ -28,7 +28,7 @@ local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
 local internet = component.proxy(component.list("internet")() or "")
-local installerVersion = "likeOS installer v1.0"
+local installerVersion = "likeOS installer v1.1"
 
 ------------------------------------
 
@@ -304,26 +304,21 @@ local function online()
     selectDist(dists)
 end
 
+local strs = {"shutdown"}
+local funcs = {computer.shutdown}
+
 if internet then
-    local num
-    while true do
-        num = menu(installerVersion, {"offline mode", "online mode", "shutdown"}, num)
-        if num == 1 then
-            offline()
-        elseif num == 2 then
-            online()
-        elseif num == 3 then
-            computer.shutdown()
-        end
-    end
-else
-    local num
-    while true do
-        num = menu(installerVersion, {"offline mode", "shutdown"}, num)
-        if num == 1 then
-            offline()
-        elseif num == 2 then
-            computer.shutdown()
-        end
-    end
+    table.insert(strs, 1, "online mode")
+    table.insert(funcs, 1, online)
+end
+
+if drive.exists("/core") then
+    table.insert(strs, 1, "offline mode")
+    table.insert(funcs, 1, offline)
+end
+
+local num
+while true do
+    num = menu(installerVersion, strs, num)
+    funcs[num]()
 end

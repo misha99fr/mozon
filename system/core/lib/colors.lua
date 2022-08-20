@@ -2,7 +2,7 @@ local colors = {
     [0] = "white",
     [1] = "orange",
     [2] = "magenta",
-    [3] = "lightblue",
+    [3] = "lightBlue",
     [4] = "yellow",
     [5] = "lime",
     [6] = "pink",
@@ -29,6 +29,10 @@ end
 
 colors.silver = colors.lightGray
 colors.lightGreen = colors.lime
+
+colors.lightblue = colors.lightBlue
+colors.lightgray = colors.lightGray
+colors.lightgreen = colors.lightGreen
 
 function colors.hsvToRgb(h, s, v)
     h = h / 255
