@@ -45,7 +45,7 @@ local function installTo(address, auto, offlineMode)
     fs.mount(proxy, mountPath)
 
     proxy.remove("/")
-    proxy.setLabel("likeOS installer v1.1")
+    pcall(proxy.setLabel, "likeOS installer v1.1")
 
     ------------------------------------
 
