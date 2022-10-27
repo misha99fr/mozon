@@ -22,6 +22,7 @@
 /system/core/calls/writebit.lua
 /system/core/calls/constrain.lua
 /system/core/calls/split.lua
+/system/core/calls/split2.lua
 /system/core/calls/createEnv.lua
 /system/core/calls/screenshot.lua
 /system/core/calls/map.lua
