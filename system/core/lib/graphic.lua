@@ -9,10 +9,15 @@ local colors = require("colors")
 
 local graphic = {}
 graphic.unloaded = true
+graphic.screensBuffers = {}
+graphic.globalUpdated = false
+graphic.updated = {}
+graphic.allowBuffer = true
 
 ------------------------------------class window
 
 local function set(self, x, y, background, foreground, text)
+    graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background, self.isPal)
@@ -22,6 +27,7 @@ local function set(self, x, y, background, foreground, text)
 end
 
 local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
+    graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.setBackground(background, self.isPal)
@@ -31,6 +37,7 @@ local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
 end
 
 local function copy(self, x, y, sizeX, sizeY, offsetX, offsetY)
+    graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
         gpu.copy(self.x + (x - 1), self.y + (y - 1), sizeX, sizeY, offsetX, offsetY)
@@ -50,6 +57,7 @@ local function getCursor(self)
 end
 
 local function write(self, data, background, foreground, autoln)
+    graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
 
     if gpu then
@@ -132,7 +140,9 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = buffer or ""
     local function redraw()
+        graphic.update(self.screen)
         local gpu = graphic.findGpu(self.screen)
+
         if gpu then
             gpu.setBackground(background, self.isPal)
             gpu.setForeground(foreground, self.isPal)
@@ -216,6 +226,7 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
         setCursor = setCursor,
         isPal = isPal or false,
     }
+
     if selected ~= nil then
         obj.selected = selected
     else
@@ -240,7 +251,7 @@ function graphic.findGpu(screen)
     local bestGpuLevel, gpuLevel, bestGpu = 0
     local function check(deep)
         for address in component.list("gpu") do
-            if not graphic.gpuPrivateList[address] and deep or component.invoke(address, "getScreen") == screen then
+            if not graphic.gpuPrivateList[address] and (deep or component.invoke(address, "getScreen") == screen) then
                 gpuLevel = tonumber(deviceinfo[address].capacity) or 0
                 if component.invoke(address, "getScreen") == screen and gpuLevel == screenLevel then --уже подключенная видео карта, казырный туз, но только если она того же уровня что и монитор!
                     gpuLevel = gpuLevel + 99999999999999999999
@@ -265,6 +276,16 @@ function graphic.findGpu(screen)
             gpu.bind(screen, false)
         end
         --bindCache[screen] = gpu
+
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            if not graphic.screensBuffers[screen] then
+                gpu.setActiveBuffer(0)
+                graphic.screensBuffers[screen] = gpu.allocateBuffer(gpu.getResolution())
+            end
+
+            gpu.setActiveBuffer(graphic.screensBuffers[screen])
+        end
+
         return gpu
     end
 end
@@ -277,9 +298,32 @@ event.listen(nil, function(eventType, _, ctype)
 end)
 ]]
 
+do
+    local gpu = component.proxy(component.list("gpu")() or "")
+
+    if gpu and gpu.setActiveBuffer and graphic.allowBuffer then
+        event.timer(0.1, function()
+            if not graphic.allowBuffer then return end
+            if graphic.globalUpdated then
+                for address, ctype in component.list("screen") do
+                    if graphic.updated[address] then
+                        graphic.updated[address] = nil
+                        graphic.findGpu(address).bitblt()
+                    end
+                end
+                graphic.globalUpdated = false
+            end
+        end, math.huge)
+    end
+end
+
+
 function graphic.getResolution(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.getResolution()
     end
 end
@@ -287,6 +331,9 @@ end
 function graphic.maxResolution(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.maxResolution()
     end
 end
@@ -294,6 +341,11 @@ end
 function graphic.setResolution(screen, x, y)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+            gpu.setResolution(x, y)
+            gpu.setActiveBuffer(graphic.screensBuffers[screen])
+        end
         return gpu.setResolution(x, y)
     end
 end
@@ -301,6 +353,11 @@ end
 function graphic.setPaletteColor(screen, i, v)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+            gpu.setPaletteColor(i, v)
+            gpu.setActiveBuffer(graphic.screensBuffers[screen])
+        end
         return gpu.setPaletteColor(i, v)
     end
 end
@@ -308,6 +365,9 @@ end
 function graphic.getPaletteColor(screen, i)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.getPaletteColor(i)
     end
 end
@@ -315,6 +375,9 @@ end
 function graphic.getDepth(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.getDepth()
     end
 end
@@ -322,6 +385,9 @@ end
 function graphic.setDepth(screen, v)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.setDepth(v)
     end
 end
@@ -329,6 +395,9 @@ end
 function graphic.maxDepth(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.maxDepth()
     end
 end
@@ -336,6 +405,9 @@ end
 function graphic.getViewport(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.getViewport()
     end
 end
@@ -343,8 +415,25 @@ end
 function graphic.setViewport(screen, x, y)
     local gpu = graphic.findGpu(screen)
     if gpu then
+        if gpu.setActiveBuffer and graphic.allowBuffer then
+            gpu.setActiveBuffer(0)
+        end
         return gpu.setViewport(x, y)
     end
+end
+
+function graphic.update(screen)
+    graphic.globalUpdated = true
+    graphic.updated[screen] = true
+end
+
+function graphic.setAllowBuffer(state)
+    if not state then
+        for address, ctype in component.list("gpu") do
+            component.invoke(address, "setActiveBuffer", 0)
+        end
+    end
+    graphic.allowBuffer = state
 end
 
 return graphic

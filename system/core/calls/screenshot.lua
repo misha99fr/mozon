@@ -14,6 +14,7 @@ end
 
 return function()
     local gpu = graphic.findGpu(screen)
+    graphic.update(screen)
     for i, v in ipairs(tbl) do
         gpu.setForeground(v[3][2])
         gpu.setBackground(v[3][3])

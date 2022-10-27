@@ -58,6 +58,8 @@ function programs.execute(name, ...)
     local code, err = programs.load(name)
     if not code then return nil, err end
 
+    do return pcall(code, ...) end
+
     local thread = package.get("thread")
     if not thread then
         return pcall(code, ...)

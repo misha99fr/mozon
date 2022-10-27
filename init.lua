@@ -19,11 +19,11 @@ likeOS разпостраняеться без лиценции по этому 
 
 структура файловой системмы
 /system/core - ядро ос, туда лутще не лезть без крайней необходимости
-/system - файлы дистрибутива, свои программы и библиотеки закидывайте сюда
-/data - данные ос
+/system - файлы дистрибутива, при создании дистрибутива программы и библиотеки закидывайте сюда
+/data - данные ос и юзера(расположения файлов юзера зависит от дистрибутива, но всегда расположены в папке data в liked это /data/userdata)
 ]]
 
-_G._COREVERSION = "v0.11"
+_G._COREVERSION = "v1.0"
 
 local bootaddress, invoke = computer.getBootAddress(), component.invoke
 local function raw_loadfile(path, mode, env)
