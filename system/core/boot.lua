@@ -1,13 +1,11 @@
 --likeOS classic boot loader
 
-do --main
-    local raw_loadfile = ...
+local raw_loadfile = ...
 
+do --main
     local component = component
     local computer = computer
     local unicode = unicode
-
-    pcall(computer.setArchitecture, "Lua 5.3")
 
     ------------------------------------
 
@@ -82,7 +80,8 @@ do --используйте автозагрузку для программ в�
     end
     autorunsIn("/system/core/autoruns")
     autorunsIn("/system/autoruns")
-    --autorunsIn("/data/autoruns") --добовляйте сами в свой дистрибутив при необходимости
+    --autorunsIn("/vendor/autoruns") --дабовляйте сами в свой дистрибутив при необходимости
+    --autorunsIn("/data/autoruns") --дабовляйте сами в свой дистрибутив при необходимости
 end
 
 do --используйте main.lua для запуска оболочьки, или основной программы
@@ -90,6 +89,8 @@ do --используйте main.lua для запуска оболочьки, �
     local programs = require("programs")
 
     if fs.exists("/system/main.lua") then
+        printText("running main.lua")
+
         local code, err = programs.load("/system/main.lua")
         if not code then
             error("failed to loading main.lua" .. (err), 0)

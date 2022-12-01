@@ -13,6 +13,9 @@ graphic.screensBuffers = {}
 graphic.globalUpdated = false
 graphic.updated = {}
 graphic.allowBuffer = true
+graphic.windows = setmetatable({}, {__mode == "v"})
+graphic.inputHistory = {}
+graphic.disableBuffers = {}
 
 ------------------------------------class window
 
@@ -136,9 +139,10 @@ local function toRealPos(self, x, y)
     return self.x + (x - 1), self.y + (y - 1)
 end
 
-local function read(self, x, y, sizeX, background, foreground, preStr, crypto, buffer)
+local function read(self, x, y, sizeX, background, foreground, preStr, crypto, buffer, clickCheck)
     local keyboards = component.invoke(self.screen, "getKeyboards")
     local buffer = buffer or ""
+    local allowUse = not clickCheck
     local function redraw()
         graphic.update(self.screen)
         local gpu = graphic.findGpu(self.screen)
@@ -151,7 +155,10 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
                 newBuffer = string.rep("*", unicode.len(newBuffer))
             end
             
-            local str = (preStr or "") .. newBuffer .. "_"
+            local str = (preStr or "") .. newBuffer
+            if allowUse and self.selected then
+                str = str .. "_"
+            end
 
             local num = (unicode.len(str) - sizeX) + 1
             if num < 1 then num = 1 end
@@ -169,7 +176,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
     return {uploadEvent = function(eventData)
         --вызывайте функцию и передавайте туда эвенты которые сами читаете, 
         --если функция чтото вернет, это результат, если он TRUE(не false) значет было нажато ctrl+c
-        if eventData[1] == "key_down" then
+        if allowUse then
             local ok
             for i, v in ipairs(keyboards) do
                 if eventData[2] == v then
@@ -178,29 +185,53 @@ local function read(self, x, y, sizeX, background, foreground, preStr, crypto, b
                 end
             end
             if ok and self.selected then
-                if eventData[4] == 28 then
-                    return buffer
-                elseif eventData[4] == 14 then
-                    if #buffer > 0 then
-                        buffer = unicode.sub(buffer, 1, unicode.len(buffer) - 1)
+                if eventData[1] == "key_down" then
+                    if eventData[4] == 28 then
+                        table.insert(graphic.inputHistory, buffer)
+                        while #graphic.inputHistory > 64 do
+                            table.remove(graphic.inputHistory, 1)
+                        end
+                        return buffer
+                    elseif eventData[4] == 14 then
+                        if #buffer > 0 then
+                            buffer = unicode.sub(buffer, 1, unicode.len(buffer) - 1)
+                            redraw()
+                        end
+                    elseif eventData[3] == 3 and eventData[4] == 46 then
+                        return true --exit ctrl + c
+                    elseif eventData[3] > 0 then
+                        buffer = buffer .. unicode.char(eventData[3])
                         redraw()
+                    elseif eventData[3] == 200 then --up
+                        
+                    elseif eventData[3] == 208 then --down
+
                     end
-                elseif eventData[3] == 3 and eventData[4] == 46 then
-                    return true --exit ctrl + c
-                elseif eventData[3] > 0 then
-                    buffer = buffer .. unicode.char(eventData[3])
+                elseif eventData[1] == "clipboard" and not crypto then
+                    buffer = buffer .. eventData[3]
+                    redraw()
+                    if buffer:byte(#buffer) == 13 then return buffer end
+                end
+            end
+        end
+
+        if clickCheck then
+            if eventData[1] == "touch" and eventData[2] == self.screen and eventData[5] == 0 then
+                if eventData[3] >= x and eventData[3] < x + sizeX and eventData[4] == y then
+                    allowUse = true
+                    redraw()
+                else
+                    allowUse = false
                     redraw()
                 end
             end
-        elseif eventData[1] == "clipboard" and not crypto then
-            buffer = buffer .. eventData[3]
-            redraw()
-            if buffer:byte(#buffer) == 13 then return buffer end
         end
     end, redraw = redraw, getBuffer = function()
         return buffer
     end, setBuffer = function(v)
         buffer = v
+    end, setAllowUse = function(state)
+        allowUse = state
     end}
 end
 
@@ -234,6 +265,13 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
         obj.selected = gpu and gpu.getDepth() == 1
     end
 
+    if obj.selected then
+        for i, window in ipairs(graphic.windows) do
+            window.selected = false
+        end
+    end
+
+    table.insert(graphic.windows, obj)
     return obj
 end
 
@@ -277,13 +315,17 @@ function graphic.findGpu(screen)
         end
         --bindCache[screen] = gpu
 
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             if not graphic.screensBuffers[screen] then
                 gpu.setActiveBuffer(0)
                 graphic.screensBuffers[screen] = gpu.allocateBuffer(gpu.getResolution())
             end
 
             gpu.setActiveBuffer(graphic.screensBuffers[screen])
+        else
+            if gpu.setActiveBuffer then
+                gpu.setActiveBuffer(0)
+            end
         end
 
         return gpu
@@ -302,13 +344,15 @@ do
     local gpu = component.proxy(component.list("gpu")() or "")
 
     if gpu and gpu.setActiveBuffer and graphic.allowBuffer then
-        event.timer(0.1, function()
+        event.timer(0.05, function()
             if not graphic.allowBuffer then return end
             if graphic.globalUpdated then
                 for address, ctype in component.list("screen") do
-                    if graphic.updated[address] then
-                        graphic.updated[address] = nil
-                        graphic.findGpu(address).bitblt()
+                    if graphic.isBufferAllow(address) then
+                        if graphic.updated[address] then
+                            graphic.updated[address] = nil
+                            graphic.findGpu(address).bitblt()
+                        end
                     end
                 end
                 graphic.globalUpdated = false
@@ -321,7 +365,7 @@ end
 function graphic.getResolution(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.getResolution()
@@ -331,7 +375,7 @@ end
 function graphic.maxResolution(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.maxResolution()
@@ -341,10 +385,41 @@ end
 function graphic.setResolution(screen, x, y)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
-            gpu.setActiveBuffer(0)
-            gpu.setResolution(x, y)
-            gpu.setActiveBuffer(graphic.screensBuffers[screen])
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
+            local activeBuffer = gpu.getActiveBuffer()
+
+            local palette
+            if gpu.getDepth() > 1 then
+                palette = {}
+                for i = 0, 15 do
+                    table.insert(palette, graphic.getPaletteColor(screen, i) or 0)
+                end
+                gpu.setActiveBuffer(activeBuffer)
+            end
+
+            
+            local newBuffer = gpu.allocateBuffer(x, y)
+            if newBuffer then
+                gpu.bitblt(newBuffer, nil, nil, nil, nil, activeBuffer)
+                graphic.screensBuffers[screen] = newBuffer
+                gpu.freeBuffer(activeBuffer)
+
+                if palette then
+                    gpu.setActiveBuffer(newBuffer)
+                    for i, color in ipairs(palette) do
+                        gpu.setPaletteColor(i - 1, color)
+                    end
+                    
+                    gpu.setActiveBuffer(0)
+                    for i, color in ipairs(palette) do
+                        gpu.setPaletteColor(i - 1, color)
+                    end
+                else
+                    gpu.setActiveBuffer(0)
+                end
+            else
+                graphic.screensBuffers[screen] = nil
+            end
         end
         return gpu.setResolution(x, y)
     end
@@ -353,10 +428,10 @@ end
 function graphic.setPaletteColor(screen, i, v)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
-            gpu.setActiveBuffer(0)
-            gpu.setPaletteColor(i, v)
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(graphic.screensBuffers[screen])
+            gpu.setPaletteColor(i, v)
+            gpu.setActiveBuffer(0)
         end
         return gpu.setPaletteColor(i, v)
     end
@@ -365,7 +440,7 @@ end
 function graphic.getPaletteColor(screen, i)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.getPaletteColor(i)
@@ -375,7 +450,7 @@ end
 function graphic.getDepth(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.getDepth()
@@ -385,7 +460,7 @@ end
 function graphic.setDepth(screen, v)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.setDepth(v)
@@ -395,7 +470,7 @@ end
 function graphic.maxDepth(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.maxDepth()
@@ -405,7 +480,7 @@ end
 function graphic.getViewport(screen)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.getViewport()
@@ -415,7 +490,7 @@ end
 function graphic.setViewport(screen, x, y)
     local gpu = graphic.findGpu(screen)
     if gpu then
-        if gpu.setActiveBuffer and graphic.allowBuffer then
+        if gpu.setActiveBuffer and graphic.isBufferAllow(screen) then
             gpu.setActiveBuffer(0)
         end
         return gpu.setViewport(x, y)
@@ -434,6 +509,32 @@ function graphic.setAllowBuffer(state)
         end
     end
     graphic.allowBuffer = state
+end
+
+function graphic.isBufferAvailable()
+    local gpu = component.proxy(component.list("gpu")() or "")
+    if gpu then
+        return not not gpu.setActiveBuffer
+    end
+    return false
+end
+
+function graphic.isBufferAllow(screen)
+    return graphic.allowBuffer and not graphic.disableBuffers[screen]
+end
+
+function graphic.setBufferStateOnScreen(screen, state)
+    graphic.disableBuffers[screen] = not state
+    if not state then
+        local gpu = graphic.findGpu(screen)
+        if gpu then
+            gpu.setActiveBuffer(0)
+        end
+    end
+end
+
+function graphic.getBufferStateOnScreen(screen)
+    return not graphic.disableBuffers[screen]
 end
 
 return graphic

@@ -34,6 +34,8 @@ local event = {}
 event.listens = {}
 event.interruptFlag = false
 event.isListen = false --если текуший код timer/listen
+event.energySaving = false
+event.autoEnergySaving = true
 
 ------------------------------------
 
@@ -68,9 +70,13 @@ function event.timer(time, func, times)
 end
 
 function event.cancel(num)
+    checkArg(1, num, "number")
+
     local ok = not not event.listens[num]
-    event.listens[num].killed = true
-    event.listens[num] = nil
+    if ok then
+        event.listens[num].killed = true
+        event.listens[num] = nil
+    end
     return ok
 end
 
@@ -110,19 +116,23 @@ function event.callThreads(eventData)
 end
 
 function computer.pullSignal(time)
-    if event.interruptFlag then
-        event.interruptFlag = false
+    local thread = package.get("thread")
+
+    if event.interruptFlag and (event.interruptFlag == true or (thread and thread.current() and event.interruptFlag == thread.current().screen) or not thread) then
+        event.interruptFlag = nil
         error("interrupted", 0)
     end
     time = time or math.huge
     
-    local thread = package.get("thread")
+    
     if thread then
         local current = thread.current()
         if current then
             return computer_pullSignal(time)
         end
     end
+
+    local minTime = event.energySaving and 0.5 or 0.1
     
     local inTime = computer.uptime()
     while true do
@@ -142,6 +152,10 @@ function computer.pullSignal(time)
             end
         else
             realtime = 0.1
+        end
+
+        if realtime < minTime then
+            realtime = minTime
         end
 
         local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
@@ -166,7 +180,7 @@ function computer.pullSignal(time)
         for k, v in pairs(event.listens) do --нет ipairs неподайдет
             if v.type == "t" and not v.killed then
                 local uptime = computer.uptime() 
-                if uptime - v.lastTime >= v.time then
+                if uptime - v.lastTime >= (event.energySaving and math.max(v.time, minTime) or v.time) then
                     v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
                     if v.times <= 0 then
                         event.listens[k] = nil
@@ -198,6 +212,11 @@ event.push = computer.pushSignal
 
 function event.pull(time, ...) --добавляет фильтер, не юзать без надобнасти
     local filters = {...}
+
+    if #filters == 0 then
+        return computer.pullSignal(time)
+    end
+
     if not time then
         time = math.huge
     end
@@ -277,7 +296,7 @@ do
 end
 
 local oldFreeMemory = computer.freeMemory()
-event.timer(0.5, function()
+local timernum = event.timer(4, function()
     local totalMemory = computer.totalMemory()
     if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
         setUnloadState(true)
@@ -296,5 +315,28 @@ event.timer(0.5, function()
         oldFreeMemory = freeMemory
     end
 end, math.huge)
+
+event.timer(1, function()
+    if event.autoEnergySaving then
+        if computer.energy() / computer.maxEnergy() <= 0.20 then
+            event.energySaving = true
+        else
+            event.energySaving = false
+        end
+    end
+end, math.huge)
+
+------------------------------------
+
+function event.setEnergySavingMode(state)
+    event.energySaving = state
+    if event.energySaving then
+        event.listens[timernum].time = 16
+    else
+        event.listens[timernum].time = 4
+    end
+end
+
+event.setEnergySavingMode(true)
 
 return event

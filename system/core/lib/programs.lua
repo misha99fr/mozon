@@ -8,7 +8,7 @@ local event = require("event")
 ------------------------------------
 
 local programs = {}
-programs.paths = {"/system/core/bin", "/system/bin", "/data/bin"}
+programs.paths = {"/system/core/bin", "/system/bin", "/data/bin", "/vendor/bin"}
 programs.unloaded = true
 
 function programs.find(name)

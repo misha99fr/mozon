@@ -115,4 +115,5 @@ function paths.removeSlashes(path)
 	return path:gsub("/+", "/")
 end
 
+paths.unloaded = true
 return paths

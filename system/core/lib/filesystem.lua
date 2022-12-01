@@ -52,7 +52,9 @@ function filesystem.get(path)
         end
     end
 
-	return filesystem.mountList[1][1], filesystem.mountList[1][2]
+	if filesystem.mountList[1] then
+		return filesystem.mountList[1][1], filesystem.mountList[1][2]
+	end
 end
 
 --[[
@@ -204,7 +206,9 @@ end
 
 filesystem.bootaddress = computer.getBootAddress()
 
-assert(filesystem.mount(filesystem.bootaddress, "/"))
-assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
+if not _G.FS_DISABLEAUTOMOUNT then
+	assert(filesystem.mount(filesystem.bootaddress, "/"))
+	assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
+end
 
 return filesystem

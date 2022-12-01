@@ -5,7 +5,6 @@ local event = require("event")
 local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
-thread.unloaded = true
 
 function coroutine.xpcall(co, ...)
     local output = {coroutine.resume(co, ...)}
