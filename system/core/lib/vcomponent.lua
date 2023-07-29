@@ -1,3 +1,4 @@
+--было довно от куда-то стырино(с github, но теперь его на github и нет вроде)
 local component = require("component")
 local computer = require("computer")
 

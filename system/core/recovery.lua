@@ -160,12 +160,14 @@ end
 
 ------------------------------------
 
-local function filePicker(title)
+local function filePicker(title, noSysDisk)
     local filesystems = {"cancel"}
     local addresses = {false}
     for address, ctype in component.list("filesystem") do
-        table.insert(filesystems, (component.invoke(address, "getLabel") or "no label") .. ":" .. address:sub(1, 5) .. (address == bootfs.address and ":sys" or ""))
-        table.insert(addresses, address)
+        if not noSysDisk or address ~= bootfs.address then
+            table.insert(filesystems, (component.invoke(address, "getLabel") or "no label") .. ":" .. address:sub(1, 5) .. (address == bootfs.address and ":sys" or ""))
+            table.insert(addresses, address)
+        end
     end
 
     local cfs = component.proxy(addresses[menu("select disk", filesystems)] or "")
@@ -184,8 +186,9 @@ local function filePicker(title)
     
     while true do
         local files = getFiles()
-        table.insert(files, 1, "back")
-        table.insert(files, 1, "cancel")
+        table.insert(files, 1, "-------- back --------")
+        table.insert(files, 1, "-------- cancel ------")
+
         local selected = menu(title .. " : " .. path, files)
         if selected == 1 then
             return
@@ -257,7 +260,7 @@ local selected
 while true do
     selected = menu("likeOS-" .. _COREVERSION .. " recovery menu",
     {
-        "Wipe data/factory reset",
+        "Wipe data/Factory reset",
         "Flash afpx archive",
         "Run Lua Script",
         "View Logs",
@@ -271,7 +274,7 @@ while true do
             bootfs.remove("/data")
         end
     elseif selected == 2 then
-        local cfs, path = filePicker("Select System Archive")
+        local cfs, path = filePicker("Select System Archive", true)
 
         if cfs then
             if paths.extension(path) == "afpx" then

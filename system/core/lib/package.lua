@@ -7,7 +7,12 @@ local unicode = unicode
 
 local package = {}
 package.paths = {"/system/core/lib", "/system/lib", "/data/lib", "/vendor/lib"}
-package.loaded = {package = package}
+package.loaded = {["package"] = package}
+for key, value in pairs(_G) do
+    if type(value) == "table" then
+        package.loaded[key] = value
+    end
+end
 package.cache = {}
 setmetatable(package.cache, {__mode = "v"})
 

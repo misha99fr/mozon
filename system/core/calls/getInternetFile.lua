@@ -19,5 +19,5 @@ if handle then
         end
     end
 else
-    return nil, "unvalid address"
+    return nil, "invalid address"
 end

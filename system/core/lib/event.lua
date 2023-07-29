@@ -30,7 +30,7 @@ local function tableInsert(tbl, value)
     end
 end
 
-local event = {}
+local event = {push = computer.pushSignal}
 event.listens = {}
 event.interruptFlag = false
 event.isListen = false --если текуший код timer/listen
@@ -208,8 +208,6 @@ function computer.pullSignal(time)
     end
 end
 
-event.push = computer.pushSignal
-
 function event.pull(time, ...) --добавляет фильтер, не юзать без надобнасти
     local filters = {...}
 
@@ -245,6 +243,12 @@ function event.pull(time, ...) --добавляет фильтер, не юза�
     end
 end
 
+function event.setEnergySavingMode(state)
+    event.energySaving = state
+end
+
+------------------------------------
+
 local currentUnloadState = true
 local function setUnloadState(state)
     if currentUnloadState == state then return end
@@ -265,7 +269,7 @@ local function setUnloadState(state)
 end
 
 do
-    event.dmem = true
+    event.dmem = true --тут true если у устройстве можно динамически изменять обьем ОЗУ
     local address, ctype = component.list("tablet")() --проверка, на устройста, в которых невозможно динамически менять оперативку
     if not address then
         address, ctype = component.list("robot")()
@@ -277,7 +281,7 @@ do
         end
     end
     if address and ctype then
-        local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent
+        local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent(сейчас находиться в ядре)
         if not vcomponent then
             event.dmem = false
         else
@@ -316,27 +320,14 @@ local timernum = event.timer(4, function()
     end
 end, math.huge)
 
-event.timer(1, function()
+event.timer(10, function()
     if event.autoEnergySaving then
-        if computer.energy() / computer.maxEnergy() <= 0.20 then
+        if computer.energy() / computer.maxEnergy() <= 0.30 then
             event.energySaving = true
         else
             event.energySaving = false
         end
     end
 end, math.huge)
-
-------------------------------------
-
-function event.setEnergySavingMode(state)
-    event.energySaving = state
-    if event.energySaving then
-        event.listens[timernum].time = 16
-    else
-        event.listens[timernum].time = 4
-    end
-end
-
-event.setEnergySavingMode(true)
 
 return event

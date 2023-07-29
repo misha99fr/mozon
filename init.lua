@@ -1,21 +1,16 @@
 --в ОС присутствует код из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
 --[[
-likeOS, "чистая" ос без оболочьки, с низкими сис требованиями
-предназначена для автоматизации(роботов, упровления аэс)
-ос имеет очень низкий разход оперативной памяти благодаря системме calls
-которыя позволяет обрашяться к функциям лежашие на hdd
+likeOS, "чистая" ос без оболочьки, с низкими сис требованиями, предназначена для автоматизации(роботов, упровления аэс)
+ос имеет очень низкий разход оперативной памяти благодаря системме calls, которыя позволяет обрашяться к функциям лежашие на hdd
 имееться умная автовыгрузка библиотек
-
 ядро ос содержит простой api для работы с графикой, который поможет вам в осрисовки интерфейсов
-даный api позволит вам работать на нескольких мониторах, а заботу переключения gpu возмет на себя сам api
+данный api позволит вам работать на нескольких мониторах, а заботу переключения gpu возмет на себя сам api
 однако для работы на нескольких мониторах стоит использовать несколько видеокарт(так будет быстрее)
-если вы хотите использовать ос на компьютере, могу посоветовать дистрибутив liked(https://github.com/igorkll/liked)
-ос имеет очень низкий разход оперативной памяти благодаря системме calls
-которыя позволяет обрашяться к функциям лежашие на hdd
+если вы хотите использовать ос на компьютере, могу посоветовать дистрибутив liked(https://github.com/igorkll/liked) официальный дистрибутив likeOS для компьютеров и планшетов
 
-для создания собственного дистрибутива, я рекомендую скопировать ядро в репозиторий, так как при обновлении ваш дистрибутив может поломаться, дабы этого избежать, скопируйте текушию версию ядра к себе в репозиторий и обновляйте в ручьную, где нада - допиливайте
-
-likeOS разпостраняеться без лиценции по этому вы имеете полное право на копирования хоть всего кода, так как я терпеть не могу всякого рода ограничалки для кода, код обший и принадлежит всем и каждому
+для создания собственного дистрибутива, я рекомендую скопировать ядро в репозиторий,
+так как при обновлении ваш дистрибутив может поломаться, дабы этого избежать,
+скопируйте текушию версию ядра к себе в репозиторий и обновляйте в ручьную, где нада - допиливайте
 
 структура файловой системмы
 /system/core - ядро ос, туда лутще не лезть без крайней необходимости
@@ -27,7 +22,7 @@ likeOS разпостраняеться без лиценции по этому 
 
 local component, computer, unicode = component, computer, unicode
 pcall(computer.setArchitecture, "Lua 5.3")
-_G._COREVERSION = "v1.1"
+_G._COREVERSION = "v1.2"
 
 local bootaddress = computer.getBootAddress()
 local bootfs = component.proxy(bootaddress)
@@ -171,14 +166,14 @@ end
 ------------------------------------recovery menu
 
 if not registry.disableRecovery then
-    printText("Press R to open recovery menu...")
+    printText("Press R to open recovery menu")
 
     local gpu = component.proxy(component.list("gpu")() or "")
 
     if gpu and component.list("screen")() then
         local recoveryScreen
-        for i = 1, 5 do
-            local eventData = {computer.pullSignal(0.5)}
+        for i = 1, 10 do
+            local eventData = {computer.pullSignal(0.1)}
             if eventData[1] == "key_down" and eventData[4] == 19 then
                 for address in component.list("screen") do
                     local keyboards = component.invoke(address, "getKeyboards")
@@ -211,7 +206,7 @@ if not registry.disableRecovery then
             if recoveryPath then
                 assert(xpcall(raw_loadfile(recoveryPath), debug.traceback, gpu, bootfs))
             else
-                printText("RECOVERY MOD IS MOD SUPPORTED")
+                printText("RECOVERY MOD IS NOT SUPPORTED")
 
                 while true do
                     computer.pullSignal()
@@ -223,7 +218,7 @@ end
 
 ------------------------------------main init
 
-printText("booting...")
+printText("Booting...")
 
 local invoke = component.invoke
 
