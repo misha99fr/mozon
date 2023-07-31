@@ -144,7 +144,7 @@ local function split(str, sep)
             i = i + 1
         end
     end
-    if str:sub(#str - (#sep - 1), #str) == sep then t.insert(parts, "") end
+    if str:sub(#str - (#sep - 1), #str) == sep then table.insert(parts, "") end
     return parts
 end
 
@@ -275,13 +275,15 @@ local function download(url, targetDrive)
     local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
     for i, path in ipairs(filelist) do
-        local full_url = url .. path
-        local data = assert(getInternetFile(full_url))
+        if path ~= "" then
+            local full_url = url .. path
+            local data = assert(getInternetFile(full_url))
 
-        targetDrive.makeDirectory(fs_path(path))
-        local file = targetDrive.open(path, "wb")
-        targetDrive.write(file, data)
-        targetDrive.close(file)
+            targetDrive.makeDirectory(fs_path(path))
+            local file = targetDrive.open(path, "wb")
+            targetDrive.write(file, data)
+            targetDrive.close(file)
+        end
     end
 end
 
@@ -290,11 +292,13 @@ local function online()
 
     local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
     for i, v in ipairs(filelist) do
-        local url, name = table.unpack(split(v, ";"))
-        table.insert(dists, {name = name, call = function(proxy)
-            download("https://raw.githubusercontent.com/igorkll/likeOS/main", proxy)
-            download(url, proxy)
-        end})
+        if v ~= "" then
+            local url, name = table.unpack(split(v, ";"))
+            table.insert(dists, {name = name, call = function(proxy)
+                download("https://raw.githubusercontent.com/igorkll/likeOS/main", proxy)
+                download(url, proxy)
+            end})
+        end
     end
 
     table.insert(dists, {name = "core only", call = function(proxy)

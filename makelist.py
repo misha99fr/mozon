@@ -9,10 +9,10 @@ def recursive_file_paths(folder_path):
 
 def write_paths_to_file(file_paths, output_file):
     with open(output_file, 'w') as f:
-        for path in file_paths:
-            lpath = os.path.relpath(path).replace("\\", "/")
-            f.write(f'/{lpath}\n')
-        f.write('/init.lua\n')
+        lpaths = [os.path.relpath(path).replace("\\", "/") for path in file_paths]
+        formatted_paths = [f'/{lpath}' for lpath in lpaths]
+        formatted_paths.append("/init.lua")
+        f.write('\n'.join(formatted_paths))
 
 if __name__ == "__main__":
     current_directory = os.path.dirname(os.path.abspath(__file__))

@@ -1,7 +1,8 @@
-if _G.DISABLE_TELEMETRY then return end
+if vendor.DISABLE_TELEMETRY then return end
 
 local component = require("component")
 local computer = require("computer")
+local event = require("event")
 
 local telemetrytype, telemetrydata = ...
 if not telemetrytype then telemetrytype = "any" end
@@ -26,7 +27,14 @@ if internet then
     telemetrytype .. "\n" ..
     telemetrydata
 
-    tcp.finishConnect()
+    local i = 0
+    while not tcp.finishConnect() do
+        event.sleep(0.1)
+        i = i + 1
+        if i > 5 then
+            break
+        end
+    end
     tcp.write(str)
     tcp.close()
 end

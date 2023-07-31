@@ -89,7 +89,7 @@ do --используйте main.lua для запуска оболочьки, �
     local programs = require("programs")
 
     if fs.exists("/system/main.lua") then
-        printText("Running main.lua")
+        printText("Running main.lua...")
 
         local code, err = programs.load("/system/main.lua")
         if not code then

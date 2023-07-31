@@ -1,5 +1,9 @@
 local component = require("component")
-local internet = component.proxy(component.list("internet")() or error("no internat card found", 0))
+local internet = component.proxy(component.list("internet")() or "")
+
+if not internet then
+    return nil, "no internet-card"
+end
 
 local url = ...
 local handle, data, result, reason = internet.request(url), ""

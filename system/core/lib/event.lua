@@ -304,7 +304,7 @@ local timernum = event.timer(4, function()
     local totalMemory = computer.totalMemory()
     if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
         setUnloadState(true)
-        if not event.dmem then
+        if not event.dmem then --если в устройстве обьем ОЗУ не может меняться динамически то таймер больше не нужен
             return false
         end
     else
@@ -323,9 +323,9 @@ end, math.huge)
 event.timer(10, function()
     if event.autoEnergySaving then
         if computer.energy() / computer.maxEnergy() <= 0.30 then
-            event.energySaving = true
+            event.setEnergySavingMode(true)
         else
-            event.energySaving = false
+            event.setEnergySavingMode(false)
         end
     end
 end, math.huge)

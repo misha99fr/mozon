@@ -36,11 +36,11 @@ function calls.load(name)
     local data = file.readAll()
     file.close()
 
-    local code, err = load(data, "=" .. path, nil, _G)
+    local code, err = load(data, "=" .. path, nil, _G) --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
     if not code then return nil, err end
 
     calls.cache[name] = code
-    return code --не _ENV потому что там "личьные" глобалы в _G то что нужно системным вызовам
+    return code
 end
 
 function calls.call(name, ...)

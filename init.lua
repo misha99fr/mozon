@@ -22,7 +22,7 @@ likeOS, "чистая" ос без оболочьки, с низкими сис 
 
 local component, computer, unicode = component, computer, unicode
 pcall(computer.setArchitecture, "Lua 5.3")
-_G._COREVERSION = "v1.2"
+_G._COREVERSION = "v1.3"
 
 local bootaddress = computer.getBootAddress()
 local bootfs = component.proxy(bootaddress)
@@ -220,8 +220,6 @@ end
 
 printText("Booting...")
 
-local invoke = component.invoke
-
 ------------------------------------check error
 
 local ok, err = xpcall(function()
@@ -250,7 +248,7 @@ if require and pcall then
     end
     local event = local_require("event")
     if event and event.errLog then
-        pcall(event.errLog, "\nglobal error: " .. err .. "\n")
+        pcall(event.errLog, "global error: " .. err)
     end
 end
 

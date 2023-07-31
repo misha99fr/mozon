@@ -25,7 +25,7 @@ function filesystem.mount(proxy, path)
         end
     end
     table.insert(filesystem.mountList, {proxy, path})
-	table.sort(filesystem.mountList, function(a, b)
+	table.sort(filesystem.mountList, function(a, b) --просто нужно, иначе все по бараде пойдет
 		return unicode.len(a[2]) > unicode.len(b[2])
 	end)
 	return true
@@ -48,6 +48,10 @@ function filesystem.get(path)
 	if path:sub(#path, #path) ~= "/" then path = path .. "/" end
     for i = 1, #filesystem.mountList do
         if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == (filesystem.mountList[i][2]) then
+			if not pcall(filesystem.mountList[i][1].exists, "/null") then
+				table.remove(filesystem.mountList, i)
+				return filesystem.get(path)
+			end
             return filesystem.mountList[i][1], unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, -1)
         end
     end

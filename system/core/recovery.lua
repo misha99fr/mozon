@@ -264,6 +264,7 @@ while true do
         "Flash afpx archive",
         "Run Lua Script",
         "View Logs",
+        "Clear Logs",
         "Shutdown",
         "Reboot"
     }, selected)
@@ -320,8 +321,10 @@ while true do
             status("Logs Not Found", true)
         end
     elseif selected == 5 then
-        computer.shutdown()
+        bootfs.remove("/data/errorlog.log")
     elseif selected == 6 then
+        computer.shutdown()
+    elseif selected == 7 then
         computer.shutdown(true)
     end
 end

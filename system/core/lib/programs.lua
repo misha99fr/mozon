@@ -58,8 +58,9 @@ function programs.execute(name, ...)
     local code, err = programs.load(name)
     if not code then return nil, err end
 
-    do return pcall(code, ...) end
-
+    return pcall(code, ...)
+    
+    --[[
     local thread = package.get("thread")
     if not thread then
         return pcall(code, ...)
@@ -69,6 +70,7 @@ function programs.execute(name, ...)
         while t:status() ~= "dead" do event.sleep(0.1) end
         return table.unpack(t.out or {true})
     end
+    ]]
 end
 
 return programs

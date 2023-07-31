@@ -11,7 +11,7 @@ local function readFunc(alternativeSplast)
     if alternativeSplast then
         io.write("index: ")
     else
-        io.write("[Y/n] ")
+        io.write("[y/N] ")
     end
     local read = term.read()
     if not read then return end
@@ -95,14 +95,16 @@ local function installTo(address, auto, offlineMode)
         local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
         for i, path in ipairs(filelist) do
-            local full_url = url .. path
-            local data = assert(getInternetFile(full_url))
+            if path ~= "" then
+                local full_url = url .. path
+                local data = assert(getInternetFile(full_url))
 
-            local lpath = fs.concat(mountPath, "core", path)
-            fs.makeDirectory(fs.path(lpath))
-            local file = assert(io.open(lpath, "wb"))
-            file:write(data)
-            file:close()
+                local lpath = fs.concat(mountPath, "core", path)
+                fs.makeDirectory(fs.path(lpath))
+                local file = assert(io.open(lpath, "wb"))
+                file:write(data)
+                file:close()
+            end
         end
 
         --proxy.makeDirectory("/boot/kernel")
@@ -124,20 +126,24 @@ local function installTo(address, auto, offlineMode)
             local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
 
             for i, path in ipairs(filelist) do
-                local full_url = url .. path
-                local data = assert(getInternetFile(full_url))
+                if path ~= "" then
+                    local full_url = url .. path
+                    local data = assert(getInternetFile(full_url))
 
-                local lpath = fs.concat(mountPath, "distributions", folder, path)
-                fs.makeDirectory(fs.path(lpath))
-                local file = assert(io.open(lpath, "wb"))
-                file:write(data)
-                file:close()
+                    local lpath = fs.concat(mountPath, "distributions", folder, path)
+                    fs.makeDirectory(fs.path(lpath))
+                    local file = assert(io.open(lpath, "wb"))
+                    file:write(data)
+                    file:close()
+                end
             end
         end
 
         local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
         for i, v in ipairs(filelist) do
-            downloadDistribution(table.unpack(split(v, ";")))
+            if v ~= "" then
+                downloadDistribution(table.unpack(split(v, ";")))
+            end
         end
     end
 

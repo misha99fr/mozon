@@ -20,9 +20,9 @@ end
 local driveAddress = fs.get(assert(getPath())).address
 
 if not computer.setBootAddress then
-    print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска через биос, инструкция должна быть написана в описании вашего биоса")
+    print("\\_(ツ)_/ usp, ваш bios не поддерживает установку загрузочного носителя, попробуйте загрузиться с диска через bios самостоятельно, инструкции должны быть написаны в описании вашего bios")
     if component.isAvailable("eeprom") then
-        print("ваш биос был определен как \"" .. (component.eeprom.getLabel() or "unknown") .. "\"")
+        print("ваш bios был определен как \"" .. (component.eeprom.getLabel() or "unknown") .. "\"")
     end
     return
 end

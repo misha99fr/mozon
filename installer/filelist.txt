@@ -1,7 +1,9 @@
 /system/core/boot.lua
 /system/core/logo.lua
 /system/core/recovery.lua
-/system/core/autoruns/a_telemetry.lua
+/system/core/autoruns/a_vendor.lua
+/system/core/autoruns/b_telemetry.lua
+/system/core/autoruns/c_write_external_data.lua
 /system/core/boot/a_eventTables.lua
 /system/core/boot/b_optimization.lua
 /system/core/boot/c_event.lua
