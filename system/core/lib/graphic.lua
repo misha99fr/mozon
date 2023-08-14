@@ -29,6 +29,13 @@ local function set(self, x, y, background, foreground, text)
     end
 end
 
+local function get(self, x, y)
+    local gpu = graphic.findGpu(self.screen)
+    if gpu then
+        return gpu.get(self.x + (x - 1), self.y + (y - 1))
+    end
+end
+
 local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
     graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
@@ -248,6 +255,7 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
         read = read,
         toRealPos = toRealPos,
         set = set,
+        get = get,
         fill = fill,
         copy = copy,
         clear = clear,
@@ -343,24 +351,27 @@ end)
 do
     local gpu = component.proxy(component.list("gpu")() or "")
 
-    if gpu and gpu.setActiveBuffer and graphic.allowBuffer then
-        event.timer(0.05, function()
-            if not graphic.allowBuffer then return end
-            if graphic.globalUpdated then
-                for address, ctype in component.list("screen") do
-                    if graphic.isBufferAllow(address) then
-                        if graphic.updated[address] then
-                            graphic.updated[address] = nil
-                            graphic.findGpu(address).bitblt()
-                        end
-                    end
-                end
-                graphic.globalUpdated = false
-            end
+    if gpu and gpu.setActiveBuffer then
+        event.timer(0.1, function()
+            graphic.forceUpdate()
         end, math.huge)
     end
 end
 
+function graphic.forceUpdate()
+    if not graphic.allowBuffer then return end
+    if graphic.globalUpdated then
+        for address, ctype in component.list("screen") do
+            if graphic.isBufferAllow(address) then
+                if graphic.updated[address] then
+                    graphic.updated[address] = nil
+                    graphic.findGpu(address).bitblt()
+                end
+            end
+        end
+        graphic.globalUpdated = false
+    end
+end
 
 function graphic.getResolution(screen)
     local gpu = graphic.findGpu(screen)

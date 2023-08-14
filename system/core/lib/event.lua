@@ -268,45 +268,12 @@ local function setUnloadState(state)
     end
 end
 
-do
-    event.dmem = true --тут true если у устройстве можно динамически изменять обьем ОЗУ
-    local address, ctype = component.list("tablet")() --проверка, на устройста, в которых невозможно динамически менять оперативку
-    if not address then
-        address, ctype = component.list("robot")()
-        if not address then
-            address, ctype = component.list("drone")()
-            if not address then
-                address, ctype = component.list("microcontroller")()
-            end
-        end
-    end
-    if address and ctype then
-        local vcomponent = package.get("vcomponent") --проверяеться наличия пользовательской библиотеки vcomponent(сейчас находиться в ядре)
-        if not vcomponent then
-            event.dmem = false
-        else
-            local off = true
-            for i, v in ipairs(vcomponent.list()) do --если это будет виртуальный компонете, не отменять таймер
-                if v[1] == address then
-                    off = false
-                    break
-                end
-            end
-            if off then
-                event.dmem = false
-            end
-        end
-    end
-end
-
 local oldFreeMemory = computer.freeMemory()
-local timernum = event.timer(4, function()
+event.timer(4, function()
     local totalMemory = computer.totalMemory()
     if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
         setUnloadState(true)
-        if not event.dmem then --если в устройстве обьем ОЗУ не может меняться динамически то таймер больше не нужен
-            return false
-        end
+        return false
     else
         local freeMemory = computer.freeMemory()
         if freeMemory > oldFreeMemory then --check GC
@@ -320,7 +287,7 @@ local timernum = event.timer(4, function()
     end
 end, math.huge)
 
-event.timer(10, function()
+event.timer(5, function()
     if event.autoEnergySaving then
         if computer.energy() / computer.maxEnergy() <= 0.30 then
             event.setEnergySavingMode(true)

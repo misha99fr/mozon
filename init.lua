@@ -22,7 +22,7 @@ likeOS, "чистая" ос без оболочьки, с низкими сис 
 
 local component, computer, unicode = component, computer, unicode
 pcall(computer.setArchitecture, "Lua 5.3")
-_G._COREVERSION = "v1.3"
+_G._COREVERSION = "v1.4"
 
 local bootaddress = computer.getBootAddress()
 local bootfs = component.proxy(bootaddress)
@@ -116,6 +116,9 @@ end
 ------------------------------------functions
 
 local function initScreen(gpu, screen)
+    if gpu.setActiveBuffer and gpu.getActiveBuffer() ~= 0 then
+        gpu.setActiveBuffer(0)
+    end
     if gpu.getScreen() ~= screen then
         gpu.bind(screen, false)
     end
@@ -134,30 +137,38 @@ do
             initScreen(gpu, screen)
         end
     end
-end
 
-function printText(text)
-    if registry.disableLogo then return end
+    local logoPath
+    if bootfs.exists("/data/logo.lua") then
+        logoPath = "/data/logo.lua"
+    elseif bootfs.exists("/vendor/logo.lua") then
+        logoPath = "/vendor/logo.lua"
+    elseif bootfs.exists("/system/logo.lua") then
+        logoPath = "/system/logo.lua"
+    elseif bootfs.exists("/system/core/logo.lua") then
+        logoPath = "/system/core/logo.lua"
+    end
 
-    local gpu = component.proxy(component.list("gpu")() or "")
-    if gpu then
+    local logoenv = {gpu = gpu, unicode = unicode, computer = computer, component = component}
+    local logo = raw_loadfile(logoPath, nil, setmetatable(logoenv, {__index = _G}))
+    
+    function printText(text)
+        if registry.disableLogo or not logo or not gpu then return end
+        logoenv.text = text
         for screen in component.list("screen") do
             initScreen(gpu, screen)
-            
-            local logoPath
-            if bootfs.exists("/data/logo.lua") then
-                logoPath = "/data/logo.lua"
-            elseif bootfs.exists("/vendor/logo.lua") then
-                logoPath = "/vendor/logo.lua"
-            elseif bootfs.exists("/system/logo.lua") then
-                logoPath = "/system/logo.lua"
-            elseif bootfs.exists("/system/core/logo.lua") then
-                logoPath = "/system/core/logo.lua"
-            end
+            logo()
+        end
+    end
 
-            local logo = raw_loadfile(logoPath, nil, setmetatable({gpu = gpu, text = text, unicode = unicode, computer = computer, component = component}, {__index = _G}))
-            if logo then
-                logo()
+    function waitEnter()
+        if registry.disableLogo or not logo or not gpu then return end
+        while true do
+            local eventData = {computer.pullSignal()}
+            if eventData[1] == "key_down" then
+                if eventData[4] == 28 then
+                    return
+                end
             end
         end
     end
@@ -206,11 +217,8 @@ if not registry.disableRecovery then
             if recoveryPath then
                 assert(xpcall(raw_loadfile(recoveryPath), debug.traceback, gpu, bootfs))
             else
-                printText("RECOVERY MOD IS NOT SUPPORTED")
-
-                while true do
-                    computer.pullSignal()
-                end
+                printText("failed to open recovery. press enter to continue")
+                waitEnter()
             end
         end
     end

@@ -1,6 +1,6 @@
 local gpu, bootfs = ...
 
-------------------------------------
+------------------------------------ base init
 
 local function getFile(fs, path)
     local file, err = fs.open(path, "rb")
@@ -38,33 +38,6 @@ function require(name)
         return _G[name]
     end
 
-    --[[
-    if name == "filesystem" then
-        return setmetatable({
-            open = function(path, mode)
-                local file, err = selectedfs.open(path, mode or "rb")
-                if not file then return nil, err end
-
-                return {
-                    read = function(...) return selectedfs.read(file, ...) end,
-                    write = function(...) return selectedfs.write(file, ...) end,
-                    close = function(...) return selectedfs.close(file, ...) end,
-                    seek = function(...) return selectedfs.seek(file, ...) end,
-                    readAll = function()
-                        local buffer = ""
-                        repeat
-                            local data = selectedfs.read(file, math.huge)
-                            buffer = buffer .. (data or "")
-                        until not data
-                        return buffer
-                    end,
-                    handle = file,
-                }
-            end
-        }, {__index = selectedfs})
-    end
-    ]]--
-
     if not cache[name] then
         cache[name] = assert(raw_loadfile("/system/core/lib/" .. name .. ".lua"))()
     end
@@ -82,7 +55,7 @@ setmetatable(_G, {__index = function(_, key)
     end
 end})
 
-------------------------------------
+------------------------------------ base gui
 
 local rx, ry = gpu.getResolution()
 
@@ -184,12 +157,17 @@ local function filePicker(title, noSysDisk)
         return files
     end
     
+    local selected = 1
     while true do
         local files = getFiles()
         table.insert(files, 1, "-------- back --------")
         table.insert(files, 1, "-------- cancel ------")
 
-        local selected = menu(title .. " : " .. path, files)
+        if selected > #files then
+            selected = #files
+        end
+        
+        selected = menu(title .. " : " .. path, files, selected)
         if selected == 1 then
             return
         elseif selected == 2 then
@@ -302,13 +280,13 @@ while true do
             end
         end
     elseif selected == 3 then
-        local cfs, path = filePicker("select lua scripts")
+        local cfs, path = filePicker("select lua script")
 
         if cfs then
-            pcall(sendTelemetry, "recovery", "runing lua script", path)
-            local code, err = load(getFile(cfs, path), "=luascripts", "bt", setmetatable({gpu = gpu}, {__index = _G}))
+            pcall(sendTelemetry, "recovery", "running lua script", path)
+            local code, err = load(getFile(cfs, path), "=luascript", "bt", setmetatable({gpu = gpu, _G = _G}, {__index = _G}))
             if not code then
-                pcall(sendTelemetry, "recovery", "runing lua script result: " .. tostring(err or "unknown"))
+                pcall(sendTelemetry, "recovery", "lua script result: " .. tostring(err or "unknown"))
                 error(err, 0)
                 return
             end

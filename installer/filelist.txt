@@ -24,6 +24,7 @@
 /system/core/calls/map.lua
 /system/core/calls/movetable.lua
 /system/core/calls/readbit.lua
+/system/core/calls/restrs.lua
 /system/core/calls/saveFile.lua
 /system/core/calls/screenshot.lua
 /system/core/calls/sendTelemetry.lua

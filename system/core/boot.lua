@@ -1,14 +1,11 @@
 --likeOS classic boot loader
 
 local raw_loadfile = ...
+local component = component
+local computer = computer
+local unicode = unicode
 
 do --main
-    local component = component
-    local computer = computer
-    local unicode = unicode
-
-    ------------------------------------
-
     local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
         return setmetatable({_G = _G}, {__index = _G})
     end
@@ -41,20 +38,21 @@ do --unittests
     local paths = require("paths")
     local programs = require("programs")
 
-    local function unittests(path)
+    function unittests(path, ...) --доступно глобально
         for _, file in ipairs(fs.list(path)) do
             local lpath = paths.concat(path, file)
-            local ok, state, log = assert(programs.execute(lpath))
+            local ok, state, log = assert(programs.execute(lpath, ...))
             if not ok then
-                error("error " .. (state or "unknown error") .. " in unittest " .. file, 0)
+                error("error \"" .. (state or "unknown error") .. "\" in unittest: " .. file, 0)
             elseif not state then
-                error("warning utittest " .. file .. (log and (", log:\n" .. log) or ""), 0)
+                error("warning unittest \"" .. file .. "\" \"" .. (log and (", log:\n" .. log) or "") .. "\"", 0)
             end
         end
     end
     unittests("/system/core/unittests")
     unittests("/system/unittests")
-    unittests("/data/unittests")
+    --unittests("/vendor/unittests") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
+    --unittests("/data/unittests") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
 end
 
 do --используйте автозагрузку для программ выполняешихся быстно, и не требуюших взаимодействий
@@ -63,25 +61,25 @@ do --используйте автозагрузку для программ в�
     local event = require("event")
     local programs = require("programs")
 
-    local function autorunsIn(path)
+    function autorunsIn(path, ...) --доступно глобально
         for i, v in ipairs(fs.list(path)) do
             local full_path = paths.concat(path, v)
     
             local func, err = programs.load(full_path)
             if not func then
-                event.errLog("err " .. (err or "unknown error") .. ", to load programm " .. full_path)
+                event.errLog("err \"" .. (err or "unknown error") .. "\", to load programm: " .. full_path)
             else
-                local ok, err = pcall(func)
+                local ok, err = pcall(func, ...)
                 if not ok then
-                    event.errLog("err " .. (err or "unknown error") .. ", in programm " .. full_path)
+                    event.errLog("err \"" .. (err or "unknown error") .. "\", in programm: " .. full_path)
                 end
             end        
         end
     end
     autorunsIn("/system/core/autoruns")
     autorunsIn("/system/autoruns")
-    --autorunsIn("/vendor/autoruns") --дабовляйте сами в свой дистрибутив при необходимости
-    --autorunsIn("/data/autoruns") --дабовляйте сами в свой дистрибутив при необходимости
+    --autorunsIn("/vendor/autoruns") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
+    --autorunsIn("/data/autoruns") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
 end
 
 do --используйте main.lua для запуска оболочьки, или основной программы
@@ -96,5 +94,8 @@ do --используйте main.lua для запуска оболочьки, �
             error("failed to loading main.lua" .. (err), 0)
         end
         code()
+    else
+        printText("main.lua does not exist. press enter to continue")
+        waitEnter()
     end
 end
