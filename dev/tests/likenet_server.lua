@@ -19,9 +19,6 @@ event.listen("client_package", function(...)
 end)
 
 while true do
-    for i, client in ipairs(server.getClients()) do
-        computer.beep(100, 0.1)
-    end
     server.sendToClients(text)
     event.sleep(delaytime)
 end

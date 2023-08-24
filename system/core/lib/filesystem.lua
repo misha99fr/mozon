@@ -134,15 +134,20 @@ function filesystem.rename(fromPath, toPath)
 	local fromProxy, fromProxyPath = filesystem.get(fromPath)
 	local toProxy, toProxyPath = filesystem.get(toPath)
 
-	-- If it's the same filesystem component
 	if fromProxy.address == toProxy.address then
 		return fromProxy.rename(fromProxyPath, toProxyPath)
 	else
-		-- Copy files to destination
-		filesystem.copy(fromPath, toPath)
-		-- Remove original files
-		filesystem.remove(fromPath)
+		local success, err = filesystem.copy(fromPath, toPath)
+		if not success then
+			return nil, err
+		end
+		local success, err = filesystem.remove(fromPath)
+		if not success then
+			return nil, err
+		end
 	end
+
+	return true
 end
 
 function filesystem.open(path, mode)
@@ -180,18 +185,21 @@ function filesystem.copy(fromPath, toPath)
 
 			local list = filesystem.list(fromPath)
 			for i = 1, #list do
-				copyRecursively(fromPath .. "/" .. list[i], toPath .. "/" .. list[i])
+				local success, err = copyRecursively(fromPath .. "/" .. list[i], toPath .. "/" .. list[i])
+				if not success then
+					return nil, err
+				end
 			end
 		else
-			local fromHandle = filesystem.open(fromPath, "rb")
+			local fromHandle, err = filesystem.open(fromPath, "rb")
 			if fromHandle then
-				local toHandle = filesystem.open(toPath, "wb")
+				local toHandle, err = filesystem.open(toPath, "wb")
 				if toHandle then
 					while true do
 						local chunk = fromHandle.read(math.huge)
 						if chunk then
 							if not toHandle.write(chunk) then
-								break
+								return nil, "failed to write file"
 							end
 						else
 							toHandle.close()
@@ -200,12 +208,18 @@ function filesystem.copy(fromPath, toPath)
 							break
 						end
 					end
+				else
+					return nil, err
 				end
+			else
+				return nil, err
 			end
 		end
+
+		return true
 	end
 
-	copyRecursively(fromPath, toPath)
+	return copyRecursively(fromPath, toPath)
 end
 
 filesystem.bootaddress = computer.getBootAddress()

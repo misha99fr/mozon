@@ -13,11 +13,11 @@ while true do
 
     if eventData[1] == "server_package" and eventData[2] == client then
         computer.beep(2000)
-        event.errLog(eventData[4])
         count = count + 1
     end
 
     if count > 5 then
-        client:disconnect()
+        client.destroy()
+        return
     end
 end

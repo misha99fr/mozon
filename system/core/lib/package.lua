@@ -32,7 +32,7 @@ function package.find(name)
     end
 end
 
-function _G.require(name)
+function package.require(name)
     if not package.loaded[name] and not package.cache[name] then
         local finded = package.find(name)
         if not finded then
@@ -68,6 +68,8 @@ end
 
 ------------------------------------
 
+_G.require = package.require
+
 package.loaded.component = component
 package.loaded.computer = computer
 package.loaded.unicode = unicode
@@ -75,6 +77,7 @@ package.loaded.unicode = unicode
 package.loaded.paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()) --подгрузить зарания во избежании проблемм
 package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
 package.loaded.calls = raw_dofile("/system/core/lib/calls.lua", nil, createEnv())
+package.loaded.natives = raw_dofile("/system/core/lib/natives.lua", nil, createEnv())
 
 raw_dofile = nil --чтобы навярника выгрузилось
 createEnv = nil

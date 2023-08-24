@@ -6,19 +6,50 @@ local computer = require("computer")
 
 local likenet = {}
 likenet.port = 432
+likenet.maxPackageSize = 1024 * 7 --в opencomputers есть служебная информация, по этому я выделел для нее 1кб
 likenet.servers = {}
 likenet.clients = {}
 
-function likenet.create(name, password, devices)
-    checkArg(1, name, "string")
-    checkArg(2, password, "string", "nil")
-    password = password or "0000"
+function likenet.packageToParts(...)
+    return toParts(serialization({...}), likenet.maxPackageSize)
+end
 
-    if devices then
-        for device in pairs(devices) do
-            if component.type(device) == "modem" then
-                component.invoke(device, "open", likenet.port)
-            end
+function likenet.getDevices()
+    local devices = {}
+    for address in pairs(component.list("modem")) do
+        devices[address] = true
+    end
+    for address in pairs(component.list("tunnel")) do
+        devices[address] = true
+    end
+    return devices
+end
+
+function likenet.create(name, password, devices, port, echoMode)
+    checkArg(1, name, "string", "nil")
+    checkArg(2, password, "string", "nil")
+    checkArg(3, devices, "table", "nil")
+    checkArg(4, port, "number", "nil")
+    checkArg(5, echoMode, "boolean", "nil")
+
+    name = name or ("server_" .. computer.address())
+    password = password or "0000"
+    devices = devices or likenet.getDevices()
+    local lport = port or likenet.port
+
+    ------------------------------------
+
+    for device in pairs(devices) do
+        if component.type(device) == "modem" then
+            component.invoke(device, "open", lport)
+        end
+    end
+
+    local function raw_send(client, ...)
+        if client.deviceType == "modem" then
+            return component.invoke(client.device, "send", client.address, lport, ...)
+        else
+            return component.invoke(client.device, "send", ...)
         end
     end
 
@@ -26,7 +57,7 @@ function likenet.create(name, password, devices)
 
     local host = {}
     host.clients = {}
-    host.echoMode = true
+    host.echoMode = not not echoMode
 
     --вернет таблицу обектов клиентов в формате {{name = "clientname", deviceType == "modem"/"tunnel", device = "address", address = "address", connected = true}}, для передачи данных клиенту нужно будет передавать в функцию sendToClient обект из этой таблицы
     function host.getClients() 
@@ -35,19 +66,20 @@ function likenet.create(name, password, devices)
 
     function host.sendToClient(client, ...)
         if not client.connected and client.disconnected then return nil, "client disconnected" end
-        local packageType = client.connected and "package" or "disconnected"
 
         if not client.connected then
             client.disconnected = true
+            raw_send(client, "disconnected")
+            return
         end
 
-        if client.deviceType == "modem" then
-            return component.invoke(client.device, "send", client.address, likenet.port, packageType, ...)
-        elseif client.deviceType == "tunnel" then
-            return component.invoke(client.device, "send", packageType, ...)
+        local smallPackages = likenet.packageToParts(...)
+        local id = math.random(0, 9999)
+        for index, packagePart in ipairs(smallPackages) do
+            if not raw_send(client, (index == #smallPackages) and "package" or "packagePart", id, packagePart) then
+                return nil, "unknown error"
+            end
         end
-
-        return nil, "device unsupported"
     end
 
     function host.sendToClients(...)
@@ -56,28 +88,26 @@ function likenet.create(name, password, devices)
         end
     end
 
-    function host.disconnect(client)
-        client.connected = false
+    function host.disconnect(client) --отключает переданого клиента, вернет true если клиент был отключен
         for i, lclient in ipairs(host.clients) do
             if lclient == client then
+                client.connected = false
+                host.sendToClient(client)
                 table.remove(host.clients, i)
-                break
+                return true
             end
         end
-        host.sendToClient(client)
+        return false
     end
 
     ------------------------------------
 
-    function host.remove()
+    function host.destroy() --вырубает хост
         event.cancel(host.listen)
         event.cancel(host.timer)
+        
         for i, client in ipairs(host.getClients()) do
             client:disconnect()
-        end
-
-        for k, v in pairs(host) do
-            host[k] = nil
         end
 
         for i, sv in ipairs(likenet.servers) do
@@ -89,36 +119,28 @@ function likenet.create(name, password, devices)
     end
 
     function host.echo()
-        if devices then
-            for device in pairs(devices) do
-                if component.type(device) == "modem" then
-                    component.invoke(device, "broadcast", likenet.port, "host", name)
-                elseif component.type(device) == "tunnel" then
-                    component.invoke(device, "send", "host", name)
-                end
-            end
-        else
-            for address in component.list("modem") do
-                component.invoke(address, "open", likenet.port)
-                component.invoke(address, "broadcast", likenet.port, "host", name)
-            end
-            for address in component.list("tunnel") do
-                component.invoke(address, "send", "host", name)
+        for device in pairs(devices) do
+            if component.type(device) == "modem" then
+                component.invoke(device, "broadcast", lport, "host", name)
+            elseif component.type(device) == "tunnel" then
+                component.invoke(device, "send", "host", name)
             end
         end
     end
 
+    local cache = {}
+
     host.listen = event.listen("modem_message", function(_, modemAddress, clientModemAddress, port, dist, packageType, ...)
         local args = {...}
         
-        if type(modemAddress) == "string" and (not devices or devices[modemAddress]) and (port == 0 or port == likenet.port) then
+        if type(modemAddress) == "string" and devices[modemAddress] and (port == 0 or port == lport) then
             local deviceType = component.type(modemAddress)
 
             if deviceType == "modem" or deviceType == "tunnel" then
                 if packageType == "connect" then
                     local function sendResult(...)
                         if deviceType == "modem" then
-                            component.invoke(modemAddress, "send", clientModemAddress, likenet.port, ...)
+                            component.invoke(modemAddress, "send", clientModemAddress, lport, ...)
                         else
                             component.invoke(modemAddress, "send", ...)
                         end
@@ -142,9 +164,9 @@ function likenet.create(name, password, devices)
                         })
                         sendResult("connectResult", true)
                     else
-                        sendResult("connectResult", false, "incorrect password")
+                        sendResult("connectResult", false, "invalid password")
                     end
-                elseif packageType == "disconnect" then
+                elseif packageType == "clientDisconnect" then
                     for i, client in ipairs(host.getClients()) do
                         if client.address == clientModemAddress then
                             host.disconnect(client)
@@ -159,8 +181,28 @@ function likenet.create(name, password, devices)
                             break
                         end
                     end
+                    
                     if client then
-                        event.push("client_package", host, client, table.unpack(args)) --likeOS поддерживает передачу таблиц через event
+                        cache[args[1]] = (cache[args[1]] or "") .. args[2]
+
+                        local result = {pcall(unserialization, cache[args[1]])}
+                        if result[1] then
+                            event.push("client_package", host, client, table.unpack(result[2])) --likeOS поддерживает передачу таблиц через event
+                        end
+
+                        cache[args[1]] = nil
+                    end
+                elseif packageType == "clientPackagePart" then
+                    local client
+                    for i, lclient in ipairs(host.getClients()) do
+                        if lclient.address == clientModemAddress then
+                            client = lclient
+                            break
+                        end
+                    end
+                    
+                    if client then
+                        cache[args[1]] = (cache[args[1]] or "") .. args[2]
                     end
                 end
             end
@@ -175,17 +217,25 @@ function likenet.create(name, password, devices)
     return host
 end
 
-function likenet.list() --выведет список доступных сетей для подключения в формате {{name = "name", serverDevice = "address", clientDeviceType = "modem"/"tunnel", clientDevice = "address"} этот обект нужно будет передать в функцию подключения к сети
+--выведет список доступных сетей для подключения в формате {{name = "name", serverDevice = "address", clientDevice = "address"}
+--этот обект нужно будет передать в функцию подключения к сети
+function likenet.list(port)
     local list = {}
+    local lport = port or likenet.port
 
     for address in component.list("modem") do
-        component.invoke(address, "open", likenet.port)
+        component.invoke(address, "open", lport)
     end
 
     local lastpackage = computer.uptime()
     while computer.uptime() - lastpackage <= 2 do
         local eventData = {event.pull(0.1)}
-        if eventData[1] == "modem_message" and type(eventData[2]) == "string" and (component.type(eventData[2]) == "modem" or component.type(eventData[2]) == "tunnel") and (eventData[4] == 0 or eventData[4] == likenet.port) and eventData[6] == "host" and type(eventData[7]) == "string" then
+        
+        if eventData[1] == "modem_message" and type(eventData[2]) == "string" and
+        (component.type(eventData[2]) == "modem" or component.type(eventData[2]) == "tunnel") and
+        (eventData[4] == 0 or eventData[4] == lport) and eventData[6] == "host" and
+        type(eventData[7]) == "string" then
+
             local finded
             for i, v in ipairs(list) do
                 if v.serverDevice == eventData[3] then
@@ -198,7 +248,6 @@ function likenet.list() --выведет список доступных сет�
                 lastpackage = computer.uptime()
                 table.insert(list, {
                     name = eventData[6],
-                    clientDeviceType = component.type(eventData[2]),
                     serverDevice = eventData[3],
                     clientDevice = eventData[2],
                 })
@@ -209,23 +258,30 @@ function likenet.list() --выведет список доступных сет�
     return list
 end
 
-function likenet.connect(host, password, connectingName)
-    checkArg(1, host, "table")
+--подключаеться к сети используя обьект полученый из функции list
+function likenet.connect(host, password, connectingName, port)
+    checkArg(1, host, "table", "nil")
     checkArg(2, password, "string", "nil")
     checkArg(3, connectingName, "string", "nil")
+    checkArg(4, port, "number", "nil")
+
+    local lport = port or likenet.port
+    host = host or likenet.list(lport)[1]
     password = password or "0000"
-    connectingName = connectingName or computer.address()
+    connectingName = connectingName or ("client_" .. computer.address())
+    
+    ------------------------------------
 
     local function raw_send(...)
-        if host.clientDeviceType == "tunnel" then
+        if component.type(host.clientDevice) == "tunnel" then
             component.invoke(host.clientDevice, "send", ...)
         else
-            component.invoke(host.clientDevice, "send", host.serverDevice, likenet.port, ...)
+            component.invoke(host.clientDevice, "send", host.serverDevice, lport, ...)
         end
     end
 
     local function isValidPackage(eventData)
-        return eventData[1] == "modem_message" and type(eventData[2]) == "string" and (component.type(eventData[2]) == "modem" or component.type(eventData[2]) == "tunnel") and (eventData[4] == 0 or eventData[4] == likenet.port)
+        return eventData[1] == "modem_message" and type(eventData[2]) == "string" and (component.type(eventData[2]) == "modem" or component.type(eventData[2]) == "tunnel") and (eventData[4] == 0 or eventData[4] == lport)
     end
 
     local function wait_result(packageType)
@@ -268,24 +324,43 @@ function likenet.connect(host, password, connectingName)
         end
     end
 
-    function client.sendToServer(...)
-        raw_send("clientPackage", ...)
+    function client.sendToServer(...) --отправляет херню на сервер
+        local smallPackages = likenet.packageToParts(...)
+        local id = math.random(0, 9999)
+        for index, packagePart in ipairs(smallPackages) do
+            if not raw_send((index == #smallPackages) and "clientPackage" or "clientPackagePart", id, packagePart) then
+                return nil, "unknown error"
+            end
+        end
     end
 
-    function client.disconnect()
-        raw_send("disconnect")
+    function client.destroy() --удаляет клиент
+        raw_send("clientDisconnect")
         disconnect()
     end
+
+    local cache = {}
 
     client.listen = event.listen("modem_message", function(...)
         if not client.connected then return false end
 
         local args = {...}
         if isValidPackage(args) then
-            if args[6] == "disconnected" then
+            local packageType, id, content = args[6], args[7], args[8]
+
+            if packageType == "disconnected" then
                 disconnect()
-            elseif args[6] == "package" then
-                event.push("server_package", client, host, table.unpack(args, 7))
+            elseif packageType == "packagePart" then
+                cache[id] = (cache[id] or "") .. content
+            elseif packageType == "package" then
+                cache[id] = (cache[id] or "") .. content
+
+                local result = {pcall(unserialization, cache[id])}
+                if result[1] then
+                    event.push("server_package", client, host, table.unpack(result[2]))
+                end
+
+                cache[id] = nil
             end
         end
     end)

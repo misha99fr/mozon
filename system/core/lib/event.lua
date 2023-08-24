@@ -2,6 +2,7 @@ local computer = require("computer")
 local fs = require("filesystem")
 local package = require("package")
 local component = require("component")
+local cache = require("cache")
 
 ------------------------------------
 
@@ -21,7 +22,7 @@ local computer_pullSignal = function(time)
     end
 end
 
-local function tableInsert(tbl, value)
+local function tableInsert(tbl, value) --кастомный insert с возвращения значения
     for i = 1, #tbl + 1 do
         if not tbl[i] then
             tbl[i] = value
@@ -32,10 +33,10 @@ end
 
 local event = {push = computer.pushSignal}
 event.listens = {}
-event.interruptFlag = false
 event.isListen = false --если текуший код timer/listen
-event.energySaving = false
-event.autoEnergySaving = true
+
+event.allowInterrupt = true
+event.interruptFlag = nil --запишите сюда адрес монитора на котором нужно вызвать прирывания(само ядро не использует это)
 
 ------------------------------------
 
@@ -47,6 +48,7 @@ function event.errLog(data)
 end
 
 function event.sleep(time)
+    time = time or 0.1
     local inTime = computer.uptime()
     repeat
         local itime = time - (computer.uptime() - inTime)
@@ -54,6 +56,7 @@ function event.sleep(time)
         computer.pullSignal(itime)
     until computer.uptime() - inTime > time
 end
+os.sleep = event.sleep
 
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
@@ -116,15 +119,28 @@ function event.callThreads(eventData)
 end
 
 function computer.pullSignal(time)
+    time = time or math.huge
+
     local thread = package.get("thread")
 
-    if event.interruptFlag and (event.interruptFlag == true or (thread and thread.current() and event.interruptFlag == thread.current().screen) or not thread) then
-        event.interruptFlag = nil
-        error("interrupted", 0)
+    if event.allowInterrupt and event.interruptFlag then
+        local interrupt = event.interruptFlag == true
+        if not interrupt then
+            if thread then
+                local current = thread.current()
+                if current and event.interruptFlag == current.screen then
+                    interrupt = true
+                end
+            else
+                interrupt = true
+            end
+        end
+        if interrupt then
+            event.interruptFlag = nil
+            error("interrupted", 0)
+        end
     end
-    time = time or math.huge
-    
-    
+
     if thread then
         local current = thread.current()
         if current then
@@ -132,7 +148,7 @@ function computer.pullSignal(time)
         end
     end
 
-    local minTime = event.energySaving and 0.5 or 0.1
+    local minTime = event.energySaving and 0.5 or 0.01
     
     local inTime = computer.uptime()
     while true do
@@ -151,7 +167,7 @@ function computer.pullSignal(time)
                 end
             end
         else
-            realtime = 0.1
+            realtime = minTime
         end
 
         if realtime < minTime then
@@ -208,7 +224,7 @@ function computer.pullSignal(time)
     end
 end
 
-function event.pull(time, ...) --добавляет фильтер, не юзать без надобнасти
+function event.pull(time, ...) --добавляет фильтер. не юзать без надобнасти
     local filters = {...}
 
     if #filters == 0 then
@@ -243,16 +259,21 @@ function event.pull(time, ...) --добавляет фильтер, не юза�
     end
 end
 
+event.energySaving = nil
 function event.setEnergySavingMode(state)
+    if event.energySaving == state then return end
     event.energySaving = state
+
+    if state then
+        event.setUnloadState(false) --в режиме энергосбережения нет выгрузки библиотек и сис вызовов, это сократит число обращений к hdd
+    end
 end
 
-------------------------------------
+event.currentUnloadState = nil
+function event.setUnloadState(state)
+    if event.currentUnloadState == state then return end
+    event.currentUnloadState = state
 
-local currentUnloadState = true
-local function setUnloadState(state)
-    if currentUnloadState == state then return end
-    currentUnloadState = state
     if state then
         setmetatable(package.cache, {__mode = 'v'})
         local calls = package.get("calls")
@@ -268,31 +289,30 @@ local function setUnloadState(state)
     end
 end
 
-local oldFreeMemory = computer.freeMemory()
-event.timer(4, function()
-    local totalMemory = computer.totalMemory()
-    if totalMemory < (400 * 1024) then --если обьем мения 400кб, то отключения автовыгрузки даже не обсуждаеться
-        setUnloadState(true)
-        return false
-    else
-        local freeMemory = computer.freeMemory()
-        if freeMemory > oldFreeMemory then --check GC
-            if freeMemory < totalMemory / 2 then
-                setUnloadState(true)
-            else
-                setUnloadState(false)
-            end
-        end
-        oldFreeMemory = freeMemory
+function event.clearCache()
+    for key, value in pairs(cache.cache) do
+        cache.cache[key] = nil
     end
-end, math.huge)
+end
 
-event.timer(5, function()
-    if event.autoEnergySaving then
-        if computer.energy() / computer.maxEnergy() <= 0.30 then
-            event.setEnergySavingMode(true)
+------------------------------------
+
+event.setEnergySavingMode(false)
+event.setUnloadState(true)
+
+event.timerId = event.timer(1, function()
+    --check energy
+    if computer.energy() / computer.maxEnergy() <= 0.30 then
+        event.setEnergySavingMode(true)
+    else
+        event.setEnergySavingMode(false)
+
+        --check RAM
+        if computer.totalMemory() / 1024 < 400 or computer.freeMemory() < computer.totalMemory() / 2 then
+            event.setUnloadState(true)
+            event.clearCache()
         else
-            event.setEnergySavingMode(false)
+            event.setUnloadState(false)
         end
     end
 end, math.huge)

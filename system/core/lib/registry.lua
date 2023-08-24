@@ -3,7 +3,9 @@ local fs = require("filesystem")
 --------------------------------
 
 local registry = {}
+registry.data = {}
 registry.path = "/data/registry.dat"
+registry.unloaded = true
 
 function registry.get()
     if fs.exists(registry.path) then
@@ -17,21 +19,22 @@ function registry.set(data)
 end
 
 function registry.read(key)
-    local data = registry.get()
-    return data[key]
+    return registry.data[key]
 end
 
 function registry.write(key, value)
-    local data = registry.get()
-    data[key] = value
-    registry.set(data)
+    registry.data[key] = value
+    registry.set(registry.data)
 end
 
 setmetatable(registry, {__newindex = function(tbl, key, value)
-    rawset(tbl, key, nil)
-    registry.write(key, value)
+    if registry.data[key] ~= value then
+        registry.data[key] = value
+        registry.set(registry.data)
+    end
 end, __index = function(tbl, key)
-    return registry.read(key)
+    return registry.data[key]
 end})
 
+registry.data = registry.get()
 return registry

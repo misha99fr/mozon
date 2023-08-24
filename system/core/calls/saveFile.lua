@@ -7,7 +7,8 @@ fs.makeDirectory(paths.path(path))
 
 local file, err = fs.open(path, "wb")
 if not file then return nil, err end
-file.write(data)
+local success, err = file.write(data)
+if not success then return nil, err end
 file.close()
 
 return true
