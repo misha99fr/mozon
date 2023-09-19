@@ -1,25 +1,19 @@
 local computer = require("computer")
 local fs = require("filesystem")
 local package = require("package")
-local component = require("component")
-local cache = require("cache")
 
 ------------------------------------
 
 local raw_computer_pullSignal = computer.pullSignal
-local computer_pullSignal = function(time)
-    if package.isLoaded("thread") and package.get("thread").current() then
-        if not time then time = math.huge end
-        local inTime = computer.uptime()
-        repeat
-            local eventData = {coroutine.yield()}
-            if #eventData > 0 then
-                return table.unpack(eventData)
-            end
-        until computer.uptime() - inTime > time
-    else
-        return raw_computer_pullSignal(time)
-    end
+local thread_computer_pullSignal = function(time)
+    if not time then time = math.huge end
+    local inTime = computer.uptime()
+    repeat
+        local eventData = {coroutine.yield()}
+        if #eventData > 0 then
+            return table.unpack(eventData)
+        end
+    until computer.uptime() - inTime > time
 end
 
 local function tableInsert(tbl, value) --кастомный insert с возвращения значения
@@ -32,36 +26,63 @@ local function tableInsert(tbl, value) --кастомный insert с возвр
 end
 
 local event = {push = computer.pushSignal}
-event.listens = {}
 event.isListen = false --если текуший код timer/listen
 
-event.allowInterrupt = true
-event.interruptFlag = nil --запишите сюда адрес монитора на котором нужно вызвать прирывания(само ядро не использует это)
+event.minTime = 0.01 --минимальное время прирывания, можно увеличить, это вызовет подения производительности но уменьшет энергопотребления
+event.listens = {}
 
-------------------------------------
+event.allowInterrupt = true
+event.interruptFlag = nil --вы можете записать сюда true чтобы вызвать прирывания, или обьект патока чтобы кильнуть только его
+event.interruptFunc = nil
+
+------------------------------------------------------------------------
 
 function event.errLog(data)
     fs.makeDirectory("/data")
     local file = assert(fs.open("/data/errorlog.log", "ab"))
-    file.write(data .. "\n")
+    assert(file.write(data .. "\n"))
     file.close()
 end
 
-function event.sleep(time)
-    time = time or 0.1
+function event.sleep(waitTime)
+    waitTime = waitTime or 0.1
+
     local inTime = computer.uptime()
     repeat
-        local itime = time - (computer.uptime() - inTime)
-        if itime < 0.1 then itime = 0.1 end
-        computer.pullSignal(itime)
-    until computer.uptime() - inTime > time
+        computer.pullSignal(waitTime - (computer.uptime() - inTime))
+    until computer.uptime() - inTime >= waitTime
 end
 os.sleep = event.sleep
+
+function event.yield()
+    computer.pullSignal(event.minTime)
+end
+
+function event.wait() --ждать то тех пор пока твой поток не убьют
+    event.sleep(math.huge)
+end
 
 function event.listen(eventType, func)
     checkArg(1, eventType, "string", "nil")
     checkArg(2, func, "function")
     return tableInsert(event.listens, {eventType = eventType, func = func, type = "l"}) --нет класический table.insert не подайдет, так как он не дает понять, нуда вставил значения
+end
+
+--имеет самый самый высокий приоритет из возможных
+--не может быть как либо удален до перезагрузки
+--вызываеться при каждом завершении pullSignal даже если события не пришло
+--ошибки в функции переданой в hyperListen будут переданы в вызвавщий pullSignal
+function event.hyperListen(func)
+    checkArg(1, func, "function")
+    
+    local pullSignal = raw_computer_pullSignal
+    local unpack = table.unpack
+
+    raw_computer_pullSignal = function (time)
+        local eventData = {pullSignal(time)}
+        func(eventData)
+        return unpack(eventData)
+    end
 end
 
 function event.timer(time, func, times)
@@ -83,165 +104,23 @@ function event.cancel(num)
     return ok
 end
 
---[[
-event.oldinterrupttime = -math.huge
-function event.interrupt()
-    if computer.uptime() - event.oldinterrupttime > 2 then
-        local eventData = {raw_computer_pullSignal(0)}
-        if #eventData > 0 then
-            computer.pushSignal(table.unpack(eventData))
-        end
-        event.oldinterrupttime = computer.uptime()
-    end
-end
-]]
-
-function event.callThreads(eventData)
-    local thread = package.get("thread")
-    if thread then
-        local function find(tbl)
-            local parsetbl = tbl.childs
-            if not parsetbl then parsetbl = tbl end
-            for i = #parsetbl, 1, -1 do
-                local v = parsetbl[i]
-                if not v.thread or coroutine.status(v.thread) == "dead" then
-                    table.remove(parsetbl, i)
-                else
-                    --computer.beep(2000, 0.1)
-                    v.out = {coroutine.xpcall(v.thread, table.unpack(v.args or eventData))}
-                    v.args = nil
-                    find(v)
-                end
-            end
-        end
-        find(thread.threads)
-    end
-end
-
-function computer.pullSignal(time)
-    time = time or math.huge
-
-    local thread = package.get("thread")
-
-    if event.allowInterrupt and event.interruptFlag then
-        local interrupt = event.interruptFlag == true
-        if not interrupt then
-            if thread then
-                local current = thread.current()
-                if current and event.interruptFlag == current.screen then
-                    interrupt = true
-                end
-            else
-                interrupt = true
-            end
-        end
-        if interrupt then
-            event.interruptFlag = nil
-            error("interrupted", 0)
-        end
-    end
-
-    if thread then
-        local current = thread.current()
-        if current then
-            return computer_pullSignal(time)
-        end
-    end
-
-    local minTime = event.energySaving and 0.5 or 0.01
-    
-    local inTime = computer.uptime()
-    while true do
-        local ltime = time - (computer.uptime() - inTime)
-        if ltime <= 0 then return end
-        local realtime = ltime
-
-        --поиск времени до первого таймера, что обязательно на него успеть
-        if not package.isLoaded("thread") then
-            for k, v in pairs(event.listens) do --нет ipairs неподайдет
-                if v.type == "t" and not v.killed then
-                    local timerTime = v.time - (computer.uptime() - v.lastTime)
-                    if timerTime < realtime then
-                        realtime = timerTime
-                    end
-                end
-            end
-        else
-            realtime = minTime
-        end
-
-        if realtime < minTime then
-            realtime = minTime
-        end
-
-        local eventData = {computer_pullSignal(realtime)} --обязательно повисеть в pullSignal
-        if not event.isListen then
-            event.callThreads(eventData)
-        end
-
-        local function runCallback(func, index, ...)
-            local oldState = event.isListen
-            event.isListen = true
-            local ok, err = pcall(func, ...)
-            event.isListen = oldState
-            if ok then
-                if err == false then --таймер/слушатель хочет отключиться
-                    event.listens[index] = nil
-                end
-            else
-                event.errLog(err or "unknown error")
-            end
-        end
-
-        for k, v in pairs(event.listens) do --нет ipairs неподайдет
-            if v.type == "t" and not v.killed then
-                local uptime = computer.uptime() 
-                if uptime - v.lastTime >= (event.energySaving and math.max(v.time, minTime) or v.time) then
-                    v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
-                    if v.times <= 0 then
-                        event.listens[k] = nil
-                    else
-                        runCallback(v.func, k)
-                        v.times = v.times - 1
-                        if v.times <= 0 then
-                            event.listens[k] = nil
-                        end
-                    end
-                end
-            end
-        end
-
-        if #eventData > 0 then
-            for k, v in pairs(event.listens) do
-                if v.type == "l" and not v.killed then
-                    if not v.eventType or v.eventType == eventData[1] then
-                        runCallback(v.func, k, table.unpack(eventData))
-                    end
-                end
-            end
-            return table.unpack(eventData)
-        end
-    end
-end
-
-function event.pull(time, ...) --добавляет фильтер. не юзать без надобнасти
+function event.pull(waitTime, ...) --добавляет фильтер
     local filters = {...}
 
     if #filters == 0 then
-        return computer.pullSignal(time)
+        return computer.pullSignal(waitTime)
     end
 
-    if not time then
-        time = math.huge
-    end
-    if type(time) == "string" then
-        table.insert(filters, 1, time)
-        time = math.huge
+    if type(waitTime) == "string" then
+        table.insert(filters, 1, waitTime)
+        waitTime = math.huge
+    elseif not waitTime then
+        waitTime = math.huge
     end
     
     local inTime = computer.uptime()
     while true do
-        local ltime = time - (computer.uptime() - inTime)
+        local ltime = waitTime - (computer.uptime() - inTime)
         if ltime <= 0 then break end
         local eventData = {computer.pullSignal(ltime)}
 
@@ -259,62 +138,140 @@ function event.pull(time, ...) --добавляет фильтер. не юза�
     end
 end
 
-event.energySaving = nil
-function event.setEnergySavingMode(state)
-    if event.energySaving == state then return end
-    event.energySaving = state
+------------------------------------------------------------------------
 
-    if state then
-        event.setUnloadState(false) --в режиме энергосбережения нет выгрузки библиотек и сис вызовов, это сократит число обращений к hdd
+local function runThreads(eventData)
+    local thread = package.get("thread")
+    if thread then
+        local function find(tbl)
+            local parsetbl = tbl.childs
+            if not parsetbl then parsetbl = tbl end
+            for i = #parsetbl, 1, -1 do
+                local v = parsetbl[i]
+                if not v.thread or coroutine.status(v.thread) == "dead" then
+                    table.remove(parsetbl, i)
+                    v.thread = nil
+                    v.dead = true
+                elseif not v.dead and v.enable then --если поток спит или умер то его потомки так-же не будут работать
+                    v.out = {coroutine.xpcall(v.thread, table.unpack(v.args or eventData))}
+                    if not v.out[1] then
+                        event.errLog("thread error: " .. tostring(v.out[2] or "unknown"))
+                    end
+
+                    v.args = nil
+                    find(v)
+                end
+            end
+        end
+        find(thread.threads)
     end
 end
 
-event.currentUnloadState = nil
-function event.setUnloadState(state)
-    if event.currentUnloadState == state then return end
-    event.currentUnloadState = state
-
-    if state then
-        setmetatable(package.cache, {__mode = 'v'})
-        local calls = package.get("calls")
-        if calls then
-            setmetatable(calls.cache, {__mode = 'v'})
+local function runCallback(isTimer, func, index, ...)
+    local oldState = event.isListen
+    event.isListen = true
+    local ok, err = pcall(func, ...)
+    event.isListen = oldState
+    if ok then
+        if err == false then --таймер/слушатель хочет отключиться
+            event.listens[index] = nil
         end
     else
-        setmetatable(package.cache, {})
-        local calls = package.get("calls")
-        if calls then
-            setmetatable(calls.cache, {})
+        event.errLog((isTimer and "timer" or "listen") .. " error: " .. tostring(err or "unknown"))
+    end
+end
+
+function computer.pullSignal(waitTime) --кастомный pullSignal для работы background процессов
+    waitTime = waitTime or math.huge
+    if waitTime < event.minTime then
+        waitTime = event.minTime
+    end
+
+    local thread = package.get("thread")
+
+    --само ядро не поднимает event.interruptFlag, это могут делать дистрибутивы для прирывания процессов
+    --вы можете записать туда true и убить первый попавшийся на пути поток, а можете записать туда обьект патока, чтобы убить что-то конкретное
+    if event.allowInterrupt and event.interruptFlag then
+        local interrupt = event.interruptFlag == true
+        if not interrupt and thread then
+            local current = thread.current()
+            if current and event.interruptFlag == current then
+                interrupt = true
+            end
+        end
+        if interrupt then
+            event.interruptFlag = nil
+            if event.interruptFunc then
+                event.interruptFunc()
+            else
+                error("interrupted", 0)
+            end
         end
     end
-end
 
-function event.clearCache()
-    for key, value in pairs(cache.cache) do
-        cache.cache[key] = nil
+    --pullSignal для патоков
+    if thread and thread.current() then
+        return thread_computer_pullSignal(waitTime)
     end
-end
+    
+    --главный pullSignal
+    local inTime = computer.uptime()
+    while true do
+        local realWaitTime = waitTime - (computer.uptime() - inTime)
+        if realWaitTime <= 0 then return end
 
-------------------------------------
-
-event.setEnergySavingMode(false)
-event.setUnloadState(true)
-
-event.timerId = event.timer(1, function()
-    --check energy
-    if computer.energy() / computer.maxEnergy() <= 0.30 then
-        event.setEnergySavingMode(true)
-    else
-        event.setEnergySavingMode(false)
-
-        --check RAM
-        if computer.totalMemory() / 1024 < 400 or computer.freeMemory() < computer.totalMemory() / 2 then
-            event.setUnloadState(true)
-            event.clearCache()
+        if thread then
+            realWaitTime = event.minTime
         else
-            event.setUnloadState(false)
+            --поиск времени до первого таймера, что обязательно на него успеть
+            for k, v in pairs(event.listens) do --нет ipairs неподайдет, так могут быть дырки
+                if v.type == "t" and not v.killed then
+                    local timerTime = v.time - (computer.uptime() - v.lastTime)
+                    if timerTime < realWaitTime then
+                        realWaitTime = timerTime
+                    end
+                end
+            end
+
+            if realWaitTime < event.minTime then --если время ожидания получилось меньше минимального времени то ждать минимальное(да таймеры будут плыть)
+                realWaitTime = event.minTime
+            end
+        end
+
+        local eventData = {raw_computer_pullSignal(realWaitTime)} --обязательно повисеть в pullSignal
+        if not event.isListen then
+            runThreads(eventData)
+        end
+
+        for k, v in pairs(event.listens) do --таймеры. нет ipairs неподайдет, там могуть быть дырки
+            if v.type == "t" and not v.killed then
+                local uptime = computer.uptime() 
+                if uptime - v.lastTime >= v.time then
+                    v.lastTime = uptime --ДО выполнения функции ресатаем таймер, чтобы тайминги не поплывали при долгих функциях
+                    if v.times <= 0 then
+                        event.listens[k] = nil
+                    else
+                        runCallback(true, v.func, k)
+                        v.times = v.times - 1
+                        if v.times <= 0 then
+                            event.listens[k] = nil
+                        end
+                    end
+                end
+            end
+        end
+
+        if #eventData > 0 then
+            for k, v in pairs(event.listens) do --слушатели. нет ipairs неподайдет, так могут быть дырки
+                if v.type == "l" and not v.killed then
+                    if not v.eventType or v.eventType == eventData[1] then
+                        runCallback(false, v.func, k, table.unpack(eventData))
+                    end
+                end
+            end
+            return table.unpack(eventData)
         end
     end
-end, math.huge)
+end
 
 return event

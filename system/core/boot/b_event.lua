@@ -1,7 +1,8 @@
-local computer = require("computer")
+local computer = computer
+
+---------------------------------------- custom queue
 
 local pullSignal = computer.pullSignal
-local pushSignal = computer.pushSignal
 local remove = table.remove
 local insert = table.insert
 local unpack = table.unpack

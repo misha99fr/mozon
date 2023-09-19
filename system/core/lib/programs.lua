@@ -8,15 +8,16 @@ local event = require("event")
 ------------------------------------
 
 local programs = {}
-programs.paths = {"/system/core/bin", "/system/bin", "/data/bin", "/vendor/bin"}
+programs.paths = {"/data/bin", "/vendor/bin", "/system/bin", "/system/core/usr/bin", "/system/core/bin"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
 programs.unloaded = true
 
 function programs.find(name)
     if unicode.sub(name, 1, 1) == "/" then
         if fs.exists(name) then
             if fs.isDirectory(name) then
-                if fs.exists(paths.concat(name, "main.lua")) then
-                    return paths.concat(name, "main.lua")
+                local executeFile = paths.concat(name, "main.lua")
+                if fs.exists(executeFile) and not fs.isDirectory(executeFile) then
+                    return executeFile
                 end
             else
                 return name
@@ -48,7 +49,7 @@ function programs.load(name, mode, env)
     local data = file.readAll()
     file.close()
     
-    local code, err = load(data, "=" .. path, mode, env or calls.call("createEnv"))
+    local code, err = load(data, "=" .. path, mode, env or createEnv())
     if not code then return nil, err end
 
     return code
@@ -58,19 +59,17 @@ function programs.execute(name, ...)
     local code, err = programs.load(name)
     if not code then return nil, err end
 
-    return pcall(code, ...)
+    --return pcall(code, ...)
     
-    --[[
     local thread = package.get("thread")
     if not thread then
         return pcall(code, ...)
     else
         local t = thread.create(code, ...)
         t:resume() --потому что по умолчанию поток спит
-        while t:status() ~= "dead" do event.sleep(0.1) end
+        while t:status() ~= "dead" do event.yield() end
         return table.unpack(t.out or {true})
     end
-    ]]
 end
 
 return programs

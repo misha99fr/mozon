@@ -22,7 +22,7 @@ end
 function paths.concat(...)
     local set = table.pack(...)
     for index, value in ipairs(set) do
-      checkArg(index, value, "string")
+        checkArg(index, value, "string")
     end
     return paths.canonical(table.concat(set, "/"))
 end
@@ -48,7 +48,7 @@ function paths.sconcat(main, ...) --работает так же как concat �
     main = paths.canonical(main) .. "/"
     local path = paths.concat(main, ...) .. "/"
     if unicode.sub(path, 1, unicode.len(main)) == main then
-        return path
+        return paths.canonical(path)
     end
     return false
 end
@@ -78,41 +78,35 @@ function paths.name(path)
     return parts[#parts]
 end
 
---из mineOS от Игоря Тимофеева https://github.com/IgorTimofeev/MineOS
---[[
-function paths.path(path)
-	return path:match("^(.+%/).") or "/"
-end
-
-function paths.name(path)
-	return path:match("%/?([^%/]+%/?)$")
-end
-]]
-
 function paths.extension(path)
-	local data = path:match("[^%/]+(%.[^%/]+)%/?$")
-    if data then
-        local str = unicode.sub(data, 2, unicode.len(data))
-        if #str then
-            return str
+    local name = paths.name(path)
+
+	local exp
+    for i = 1, #name do
+        local char = name:sub(i, i)
+        if char == "." then
+            if i ~= 1 then
+                exp = ""
+            end
+        elseif exp then
+            exp = exp .. char
         end
     end
-    return nil
+
+    if exp and #exp > 0 then
+        return exp
+    end
 end
 
 function paths.hideExtension(path)
-    if paths.name(path):sub(1, 1) == "." and not string.find(paths.name(path):sub(2, 2), "%.") then
+    path = paths.canonical(path)
+
+    local exp = paths.extension(path)
+    if exp then
+        return path:sub(1, #path - (#exp + 1))
+    else
         return path
     end
-	return path:match("(.+)%..+") or path
-end
-
-function paths.isHidden(path)
-	return path:sub(1, 1)
-end
-
-function paths.removeSlashes(path)
-	return path:gsub("/+", "/")
 end
 
 paths.unloaded = true

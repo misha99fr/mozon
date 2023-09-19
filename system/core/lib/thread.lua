@@ -1,7 +1,3 @@
-local event = require("event")
-
-------------------------------------
-
 local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
@@ -39,8 +35,9 @@ function thread.current()
 end
 
 function thread.attachThread(t, obj)
-    local obj = obj or thread.current()
     if obj then
+        t.parentData = obj.parentData
+        t.parent = obj
         if obj.childs then
             table.insert(obj.childs, t)
         else
@@ -53,7 +50,7 @@ function thread.attachThread(t, obj)
 end
 
 local function create(func, ...)
-    local t = coroutine.create(func, ...)
+    local t = coroutine.create(func)
     local obj = {
         args = {...},
         childs = {},
@@ -63,12 +60,21 @@ local function create(func, ...)
         kill = kill,
         resume = resume,
         suspend = suspend,
-        status = status
+        status = status,
+        parentData = {},
+
+        func = func,
     }
     return obj
 end
 
 function thread.create(func, ...)
+    local obj = create(func, ...)
+    thread.attachThread(obj, thread.current())
+    return obj
+end
+
+function thread.createBackground(func, ...)
     local obj = create(func, ...)
     thread.attachThread(obj)
     return obj
@@ -82,8 +88,9 @@ end
 
 ------------------------------------thread functions
 
-function raw_kill(t) --не стоит убивать паток сырым kill
+function raw_kill(t) --не стоит убивать паток через raw_kill
     t.thread = nil
+    t.dead = true
 end
 
 function kill(t) --вы сможете переопределить это в своем потоке, наример чтобы закрыть таймеры
@@ -99,8 +106,20 @@ function suspend(t)
 end
 
 function status(t)
-    if not t.thread then return "dead" end
-    return coroutine.status(t.thread)
+    if not t.thread or coroutine.status(t.thread) == "dead" then return "dead" end
+    if t.parent then
+        local status = t.parent:status()
+        if status == "dead" then
+            return "dead"
+        elseif status == "suspended" then
+            return "suspended"
+        end
+    end
+    if t.enable then
+        return "running"
+    else
+        return "suspended"
+    end
 end
 
 return thread

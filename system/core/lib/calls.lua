@@ -1,3 +1,5 @@
+--устаревшая технология, которая будет постепенно выпиливаться, но скорее всего не будет выпилина полностью, так как может иметь применения
+
 local fs = require("filesystem")
 local unicode = require("unicode")
 local paths = require("paths")
@@ -5,12 +7,73 @@ local paths = require("paths")
 ------------------------------------
 
 local calls = {} --calls позваляет вызывать функции с жеского диска, что экономит оперативную память
-calls.paths = {"/system/core/calls", "/system/calls", "/vendor/calls"}
-calls.loaded = {}
---calls.loaded нужен на случай, если необходимо чтобы call был загружен в память постоянно, авто кеширования тут нет,
---но в случаи если вы хотите вы можете поместить туда функцию чтобы избежать дублирования(после добавления кеша, используйте loaded в ситуации которая произошла в /system/core/calls/writebit.lua(лень разписывать))
+calls.paths = {"/data/calls", "/vendor/calls", "/system/calls", "/system/core/usr/calls", "/system/core/calls"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
+calls.loaded = { --тут записаны функции которые раньше были hdd функциями, но стали перемешены в библиотеки
+    map = math.map,
+    constrain = math.clamp,
+
+    deepclone = table.deepclone,
+
+    getPath = function ()
+        return require("system").getSelfScriptPath()
+    end,
+    getDeviceType = function ()
+        return require("system").getDeviceType()
+    end,
+
+    getFile = fs.readFile,
+    saveFile = fs.writeFile,
+
+    serialization = function (...)
+        return require("serialization").serialization(...)
+    end,
+    unserialization = function (...)
+        return require("serialization").unserialization(...)
+    end,
+
+    uuid = function ()
+        return require("uuid").next()
+    end,
+    sha256 = function (msg)
+        return require("sha256").sha256(msg)
+    end,
+
+    getInternetFile = function (url)
+        return require("internet").getInternetFile(url)
+    end,
+
+    createEnv = createEnv,
+    writebit = bit32.writebit,
+    readbit = bit32.readbit,
+
+    getGameTime = function ()
+        local time = require("time")
+        local gametime = time.getGameTime()
+        return time.parseHours(gametime), time.parseMinute(gametime), time.parseSecond(gametime)
+    end,
+    getRawRealtime = function ()
+        return require("time").getRealTime()
+    end,
+    getRealTime = function (timezone)
+        local time = require("time")
+        local realtime = time.addTimeZone(time.getRealTime(), timezone or 0)
+        return time.parseHours(realtime), time.parseMinute(realtime), time.parseSecond(realtime)
+    end,
+
+    split = function (str, sep)
+        return require("parser").split(string, str, sep)
+    end,
+    split2 = function (tool, str, seps)
+        return require("parser").split(tool, str, seps)
+    end,
+    toParts = function (str, max)
+        return require("parser").toParts(string, str, max)
+    end,
+    toPartsUnicode = function (str, max)
+        return require("parser").toParts(unicode, str, max)
+    end
+} --вы можете записать сюда функции которые не должны выгружаться
 calls.cache = {}
-setmetatable(calls.cache, {__mode = "v"})
 
 function calls.find(name)
     if unicode.sub(name, 1, 1) == "/" then
@@ -44,7 +107,11 @@ function calls.load(name)
 end
 
 function calls.call(name, ...)
-    return calls.load(name)(...)
+    local code = calls.load(name)
+    if not code then
+        error("call \"" .. name .. "\" not found", 2)
+    end
+    return code(...)
 end
 
 setmetatable(_G, {__index = function(self, key)

@@ -1,26 +1,21 @@
 ------------------------------------base init
 
+pcall(computer.setArchitecture, "Lua 5.3")
+
+local pullSignal = computer.pullSignal
+local shutdown = computer.shutdown
+local error = error
+local pcall = pcall
+
 local component, computer, unicode = component, computer, unicode
-_G._COREVERSION = "likeOS v1.5"
+_G._COREVERSION = "likeOS-v1.6"
 
 local bootaddress = computer.getBootAddress()
 local bootfs = component.proxy(bootaddress)
 
-------------------------------------background
-
-do
-    local shutdown = computer.shutdown
-    function computer.shutdown(reboot)
-        if sendTelemetry then
-            pcall(sendTelemetry, "power off", (reboot and "reboot" or "shutdown"))
-        end
-        return shutdown(reboot)
-    end
-end
-
 ------------------------------------base funcs
 
-local function getFile(fs, path)
+local function raw_readFile(fs, path)
     local file, err = fs.open(path, "rb")
     if not file then return nil, err end
 
@@ -34,18 +29,20 @@ local function getFile(fs, path)
     return buffer
 end
 
-local function saveFile(fs, path, data)
+local function raw_writeFile(fs, path, data)
     local file, err = fs.open(path, "wb")
     if not file then return nil, err end
-
-    fs.write(file, data)
+    local ok, err = fs.write(file, data)
+    if not ok then
+        pcall(fs.close, file)
+        return nil, err
+    end
     fs.close(file)
-
     return true
 end
 
 local function raw_loadfile(path, mode, env)
-    local data, err = getFile(bootfs, path)
+    local data, err = raw_readFile(bootfs, path)
     if not data then return nil, err end
     return load(data, "=" .. path, mode or "bt", env or _G)
 end
@@ -66,9 +63,10 @@ do
         mainRegistryPath = "/system/core/registry.dat"
     end
 
-    if mainRegistryPath and bootfs.exists(mainRegistryPath) and not bootfs.exists(registryPath) then
-        bootfs.makeDirectory("/data")
-        saveFile(bootfs, registryPath, getFile(bootfs, mainRegistryPath))
+    if mainRegistryPath and not bootfs.exists(registryPath) then
+        pcall(bootfs.makeDirectory, "/data")
+        local content = raw_readFile(bootfs, mainRegistryPath)
+        pcall(raw_writeFile, bootfs, registryPath, content)
     end
 
     if bootfs.exists(registryPath) then
@@ -81,7 +79,7 @@ do
             until not data
             bootfs.close(file)
 
-            local code = load("return " .. buffer)
+            local code = load("return " .. buffer, "=unserialization", "t", {math={huge=math.huge}})
             if code then
                 local result = {pcall(code)}
                 if result[1] and type(result[2]) == "table" then
@@ -95,6 +93,9 @@ end
 ------------------------------------functions
 
 local function initScreen(gpu, screen)
+    pcall(component.invoke, screen, "turnOn")
+    pcall(component.invoke, screen, "setPrecise", false)
+
     if gpu.setActiveBuffer and gpu.getActiveBuffer() ~= 0 then
         gpu.setActiveBuffer(0)
     end
@@ -131,7 +132,7 @@ do
     local logoenv = {gpu = gpu, unicode = unicode, computer = computer, component = component}
     local logo = raw_loadfile(logoPath, nil, setmetatable(logoenv, {__index = _G}))
     
-    function printText(text)
+    function bootSplash(text)
         if registry.disableLogo or not logo or not gpu then return end
         logoenv.text = text
         for screen in component.list("screen") do
@@ -156,7 +157,7 @@ end
 ------------------------------------recovery menu
 
 if not registry.disableRecovery then
-    printText("Press R to open recovery menu")
+    bootSplash("Press R to open recovery menu")
 
     local gpu = component.proxy(component.list("gpu")() or "")
 
@@ -179,7 +180,7 @@ if not registry.disableRecovery then
         ::exit::
 
         if recoveryScreen then
-            printText("RECOVERY MOD")
+            bootSplash("RECOVERY MOD")
             initScreen(gpu, recoveryScreen)
 
             local recoveryPath
@@ -194,38 +195,37 @@ if not registry.disableRecovery then
             end
 
             if recoveryPath then
-                assert(xpcall(raw_loadfile(recoveryPath), debug.traceback, gpu, bootfs))
+                assert(xpcall(assert(raw_loadfile(recoveryPath)), debug.traceback, gpu, bootfs))
             else
-                printText("failed to open recovery. press enter to continue")
+                bootSplash("failed to open recovery. press enter to continue")
                 waitEnter()
             end
         end
     end
 end
 
-------------------------------------main init
+------------------------------------run bootloader
 
-printText("Booting...")
-
-------------------------------------check error
+bootSplash("Booting...")
 
 local ok, err = xpcall(function()
-    local code, err = raw_loadfile("/system/core/boot.lua")
+    local code, err = raw_loadfile("/system/core/bootloader.lua")
     if not code then
-        error("err to load bootloader " .. (err or "unknown error"), 0)
+        error("err to load bootloader: \"" .. (err or "unknown error") .. "\"", 0)
     end
 
-    code(raw_loadfile)
+    code(raw_loadfile, bootfs)
 end, debug.traceback)
+
+pullSignal(0.1) --во избежании краша
 
 if not err then
     err = "unknown"
 end
 
-pcall(sendTelemetry, "globalError", err)
-
 ------------------------------------log error
 
+local log_ok
 if require and pcall then
     local function local_require(name)
         local result = {pcall(require, name)}
@@ -235,11 +235,13 @@ if require and pcall then
     end
     local event = local_require("event")
     if event and event.errLog then
-        pcall(event.errLog, "global error: " .. err)
+        log_ok = pcall(event.errLog, "global error: " .. err)
     end
 end
 
 ------------------------------------error output
 
-computer.shutdown(true)
---error(err, 0)
+if log_ok then --если удалось записать log то комп перезагрузиться, а если не удалось то передаст ошибку в bios
+    shutdown(true)
+end
+error(err, 0)

@@ -1,12 +1,11 @@
---likeOS classic boot loader
+--likeOS classic bootloader
 
-local raw_loadfile = ...
-local component = component
-local computer = computer
-local unicode = unicode
+local raw_loadfile, bootfs = ...
 
-do --main
-    local function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
+-------------------------------------- initialization
+
+do
+    function createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
         return setmetatable({_G = _G}, {__index = _G})
     end
 
@@ -14,26 +13,33 @@ do --main
         return assert(raw_loadfile(path, mode, env))(...)
     end
 
-    do --package
-        local package = raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, createEnv)
-
-        _G.computer = nil
-        _G.component = nil
-        _G.unicode = nil
+    if not bit32 then --на lua 5.3 нет встроеной либы bit32, но она нужна для совместимости, так что хай будет
+        _G.bit32 = raw_dofile("/system/core/lib/bit32.lua", nil, createEnv(), raw_dofile)
     end
+    raw_dofile("/system/core/boot/a_functions.lua", nil, _G) --загружаю зарания, так как это нужно для инициализации natives
+    _G.natives = raw_dofile("/system/core/lib/natives.lua", nil, createEnv(), raw_dofile) --natives позваляет получить доступ к нетронутым методами библиотек computer и component
 
-    do --boot scripts
-        local fs = require("filesystem")
-        local paths = require("paths")
-    
-        local path = "/system/core/boot"
-        for i, v in ipairs(fs.list(path) or {}) do
-            raw_dofile(paths.concat(path, v), nil, _G)
+    do --бут скрипты, тут инициализации всего и вся
+        local path = "/system/core/boot/"
+        for i, v in ipairs(bootfs.list(path) or {}) do
+            raw_dofile(path .. v, nil, _G)
         end
     end
+
+    raw_dofile("/system/core/lib/package.lua", nil, createEnv(), raw_dofile, bootfs) --package инициализирует библиотеки
+
+    _G.computer = nil
+    _G.component = nil
+    _G.unicode = nil
+    _G.natives = nil
+
+    require("event")
+    require("system")
 end
 
-do --unittests
+-------------------------------------- unittests
+
+do
     local fs = require("filesystem")
     local paths = require("paths")
     local programs = require("programs")
@@ -55,7 +61,9 @@ do --unittests
     --unittests("/data/unittests") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
 end
 
-do --используйте автозагрузку для программ выполняешихся быстно, и не требуюших взаимодействий
+-------------------------------------- используйте автозагрузку для программ выполняешихся быстно, и не требуюших взаимодействий
+
+do
     local fs = require("filesystem")
     local paths = require("paths")
     local event = require("event")
@@ -82,20 +90,16 @@ do --используйте автозагрузку для программ в�
     --autorunsIn("/data/autoruns") --дабовляйте сами в свой дистрибутив при необходимости(так как может быть необходим запуск после инициализации)
 end
 
-do --используйте main.lua для запуска оболочьки, или основной программы
-    local fs = require("filesystem")
-    local programs = require("programs")
+--------------------------------------используйте main.lua для запуска оболочьки, или основной программы
 
-    if fs.exists("/system/main.lua") then
-        printText("Running main.lua...")
-
-        local code, err = programs.load("/system/main.lua")
-        if not code then
-            error("failed to loading main.lua" .. (err), 0)
-        end
-        code()
-    else
-        printText("main.lua does not exist. press enter to continue")
-        waitEnter()
+bootSplash("Running main.lua...")
+if require("filesystem").exists("/system/main.lua") then
+    local code, err = require("programs").load("/system/main.lua")
+    if not code then
+        error("failed to loading main.lua" .. err, 0)
     end
+    code()
+else
+    bootSplash("main.lua does not exist. press enter to continue")
+    waitEnter()
 end

@@ -93,6 +93,7 @@ function syntaxHighlighting.parse(code)
             posX = posX + unicode.len(lstr)
             counter = counter + unicode.len(lstr)
         end
+        counter = counter + 1
     end
     return obj
 end

@@ -20,20 +20,22 @@ local function tableRemove(tbl, dat)
     return count > 0
 end
 
-local lib = {}
+local afpx = {}
 
-function lib.pack(dir, outputpath)
+function afpx.pack(dir, outputpath)
     dir = paths.canonical(dir)
+    outputpath = paths.canonical(outputpath)
+
     local files = {}
     local function process()
         local outputfile = assert(fs.open(outputpath, "wb"))
         table.insert(files, outputfile)
-        outputfile.write("AFP_____")
+        assert(outputfile.write("AFP_____"))
 
         local function addfile(path)
             local full_path = paths.concat(dir, path)
-            outputfile.write(path .. nullchar)
-            outputfile.write(tostring(math.floor(fs.size(full_path))) .. nullchar)
+            assert(outputfile.write(path:sub(2, #path) .. nullchar))
+            assert(outputfile.write(tostring(math.floor(fs.size(full_path))) .. nullchar))
 
             local file, err = fs.open(full_path, "rb")
             if not file then error("error: " .. err .. " to open file " .. full_path, 0) end
@@ -41,7 +43,7 @@ function lib.pack(dir, outputpath)
             while true do
                 local data = file.read(math.huge)
                 if not data then break end
-                outputfile.write(data)
+                assert(outputfile.write(data))
             end
             tableRemove(files, file)
             file.close()
@@ -52,11 +54,13 @@ function lib.pack(dir, outputpath)
 
             for _, path in ipairs(fs.list(ldir)) do
                 local full_path = paths.concat(ldir, path)
-                if fs.isDirectory(full_path) then
-                    recurse(full_path)
-                else
-                    --print("archpath", archpath, "path", path)
-                    addfile(paths.concat(archpath, path))
+
+                if full_path ~= outputpath then
+                    if fs.isDirectory(full_path) then
+                        recurse(full_path)
+                    else
+                        addfile(paths.concat(archpath, path))
+                    end
                 end
             end
         end
@@ -72,8 +76,10 @@ function lib.pack(dir, outputpath)
     return table.unpack(ret)
 end
 
-function lib.unpack(inputpath, dir)
+function afpx.unpack(inputpath, dir)
+    inputpath = paths.canonical(inputpath)
     dir = paths.canonical(dir)
+
     local files = {}
     local function process()
         local inputfile = assert(fs.open(inputpath, "rb"))
@@ -91,12 +97,10 @@ function lib.unpack(inputpath, dir)
                 return data
             end
             while true do
-                --print("while")
                 local path = read()
                 if path == "" then break end
-                --print("PATH", path)
+                if path:find("%.%.") then error("the archive is broken", 2) end
                 local filesize = tonumber(read())
-                --print("SIZE", filesize)
 
                 local path = paths.concat(dir, path)
                 fs.makeDirectory(paths.path(path))
@@ -106,7 +110,7 @@ function lib.unpack(inputpath, dir)
                     local data = inputfile.read(filesize)
                     if not data then break end
                     filesize = filesize - #data
-                    file.write(data)
+                    assert(file.write(data))
                     if filesize <= 0 then break end
                 end
                 tableRemove(files, file)
@@ -127,5 +131,5 @@ function lib.unpack(inputpath, dir)
     return table.unpack(ret)
 end
 
-lib.unloaded = true
-return lib
+afpx.unloaded = true
+return afpx

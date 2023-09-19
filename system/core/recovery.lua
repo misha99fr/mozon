@@ -232,11 +232,9 @@ end
 
 ------------------------------------
 
-pcall(sendTelemetry, "recovery", "recovery open")
-
 local selected
 while true do
-    selected = menu("likeOS-" .. _COREVERSION .. " recovery menu",
+    selected = menu(_COREVERSION .. " recovery menu",
     {
         "Wipe data/Factory reset",
         "Flash afpx archive",
@@ -249,7 +247,6 @@ while true do
 
     if selected == 1 then
         if yesno("wipe data?") then
-            pcall(sendTelemetry, "data wiped")
             bootfs.remove("/data")
         end
     elseif selected == 2 then
@@ -261,14 +258,13 @@ while true do
                     if yesno("flash this file? all data will be deleted!") then
                         fs.mountList = {}
                         
-                        pcall(sendTelemetry, "flashing firmware", path)
                         status("flashing...")
 
-                        local afpx = require("afpx")
+                        local archiver = require("archiver")
                         bootfs.remove("/")
                         fs.mount(bootfs, "/sys")
                         fs.mount(cfs, "/disk")
-                        assert(afpx.unpack(paths.concat("/disk", path), "/sys"))
+                        assert(archiver.unpack(paths.concat("/disk", path), "/sys"))
                         _G.DISABLE_TELEMETRY = true
                         computer.shutdown(true)
                     end
@@ -283,10 +279,8 @@ while true do
         local cfs, path = filePicker("select lua script")
 
         if cfs then
-            pcall(sendTelemetry, "recovery", "running lua script", path)
             local code, err = load(getFile(cfs, path), "=luascript", "bt", setmetatable({gpu = gpu, _G = _G}, {__index = _G}))
             if not code then
-                pcall(sendTelemetry, "recovery", "lua script result: " .. tostring(err or "unknown"))
                 error(err, 0)
                 return
             end

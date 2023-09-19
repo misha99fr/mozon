@@ -1,4 +1,4 @@
-local raw_dofile, createEnv = ...
+local raw_dofile, bootfs = ...
 local component = component
 local computer = computer
 local unicode = unicode
@@ -6,7 +6,7 @@ local unicode = unicode
 ------------------------------------
 
 local package = {}
-package.paths = {"/system/core/lib", "/system/lib", "/data/lib", "/vendor/lib"}
+package.paths = {"/data/lib",  "/vendor/lib", "/system/lib", "/system/core/usr/lib", "/system/core/lib"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
 package.loaded = {["package"] = package}
 for key, value in pairs(_G) do
     if type(value) == "table" then
@@ -14,18 +14,34 @@ for key, value in pairs(_G) do
     end
 end
 package.cache = {}
-setmetatable(package.cache, {__mode = "v"})
 
 function package.find(name)
-    if unicode.sub(name, 1, 1) == "/" then
-        return name
-    else
-        local fs = require("filesystem")
-        local paths = require("paths")
+    local fs = require("filesystem")
+    local paths = require("paths")
 
+    local function resolve(path, deep)
+        if fs.exists(path) then
+            if fs.isDirectory(path) then
+                local lpath = paths.concat(path, "init.lua")
+                if fs.exists(lpath) and not fs.isDirectory(lpath) then
+                    return lpath
+                end
+            else
+                return path
+            end
+        end
+
+        if not deep then
+            return resolve(path .. ".lua", true)
+        end
+    end
+    
+    if unicode.sub(name, 1, 1) == "/" then
+        return resolve(name)
+    else
         for i, v in ipairs(package.paths) do
-            local path = paths.concat(v, name .. ".lua")
-            if fs.exists(path) then
+            local path = resolve(paths.concat(v, name))
+            if path then
                 return path
             end
         end
@@ -36,16 +52,15 @@ function package.require(name)
     if not package.loaded[name] and not package.cache[name] then
         local finded = package.find(name)
         if not finded then
-            error("lib " .. name .. " is not found", 0)
+            error("lib " .. name .. " is not found", 2)
         end
         local fs = require("filesystem")
-        local calls = require("calls")
 
         local file = assert(fs.open(finded, "rb"))
         local data = file.readAll()
         file.close()
 
-        local lib = assert(load(data, "=" .. finded, nil, calls.call("createEnv")))()
+        local lib = assert(load(data, "=" .. finded, nil, createEnv()))()
         if type(lib) == "table" and lib.unloaded then
             package.cache[name] = lib
         else
@@ -53,7 +68,7 @@ function package.require(name)
         end
     end
     if not package.loaded[name] and not package.cache[name] then
-        error("lib " .. name .. " is not found" , 0)
+        error("lib " .. name .. " is not found" , 2)
     end
     return package.loaded[name] or package.cache[name]
 end
@@ -66,6 +81,10 @@ function package.isLoaded(name)
     return not not package.get(name)
 end
 
+function package.isInstalled(name)
+    return not not package.find(name)
+end
+
 ------------------------------------
 
 _G.require = package.require
@@ -74,13 +93,22 @@ package.loaded.component = component
 package.loaded.computer = computer
 package.loaded.unicode = unicode
 
-package.loaded.paths = raw_dofile("/system/core/lib/paths.lua", nil, createEnv()) --подгрузить зарания во избежании проблемм
-package.loaded.filesystem = raw_dofile("/system/core/lib/filesystem.lua", nil, createEnv())
-package.loaded.calls = raw_dofile("/system/core/lib/calls.lua", nil, createEnv())
-package.loaded.natives = raw_dofile("/system/core/lib/natives.lua", nil, createEnv())
+local function raw_reg(name, path)
+    if bootfs.exists(path) then
+        local lib = raw_dofile(path, nil, createEnv())
+        if type(lib) == "table" and lib.unloaded then
+            package.cache[name] = lib
+        else
+            package.loaded[name] = lib
+        end
+    end
+end
 
-raw_dofile = nil --чтобы навярника выгрузилось
-createEnv = nil
+raw_reg("vcomponent", "/system/core/usr/lib/vcomponent.lua") --подгрузить зарания во избежании проблемм
+raw_reg("paths",      "/system/core/lib/paths.lua")      --подгрузить зарания во избежании проблемм
+raw_reg("filesystem", "/system/core/lib/filesystem.lua")
+raw_reg("calls",      "/system/core/lib/calls.lua")
+package.loaded.natives = _G.natives
 
 ------------------------------------
 

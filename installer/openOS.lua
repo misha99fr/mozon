@@ -181,19 +181,32 @@ elseif index == "2" then
 
     local driveAddress = computer.tmpAddress()
 
-    if not computer.setBootAddress then
-        print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска(tmpfs) через биос, инструкция должна быть написана в описании вашего биоса")
+    local function biosErr()
+        print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска/tmpfs через биос, инструкция должна быть написана в описании вашего биоса")
         if component.isAvailable("eeprom") then
             print("ваш биос был определен как \"" .. (component.eeprom.getLabel() or "unknown") .. "\"")
         end
+    end
+
+    if not computer.setBootAddress then
+        biosErr()
         return
     end
     
-    computer.setBootAddress(driveAddress)
-    if computer.setBootFile then
-        computer.setBootFile("/init.lua")
+    local result = {pcall(computer.setBootAddress, driveAddress)}
+    if not result[1] then
+        biosErr()
+        return
     end
-    computer.shutdown("fast")
+    if not result[2] and type(result[3]) == "string" then
+        biosErr()
+        return
+    end
+
+    if computer.setBootFile then
+        pcall(computer.setBootFile, "/init.lua")
+    end
+    pcall(computer.shutdown, "fast")
 else
     print("нету этого режима")
 end

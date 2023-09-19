@@ -86,5 +86,10 @@ function colors.unBlend(color)
     return math.floor(red), math.floor(green), math.floor(blue)
 end
 
+function colors.colorMul(color, mul)
+    local r, g, b = colors.unBlend(color)
+    return colors.blend(r * mul, g * mul, b * mul)
+end
+
 colors.unloaded = true
 return colors

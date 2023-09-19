@@ -2,15 +2,19 @@ local graphic = require("graphic")
 local screen, x, y, sx, sy = ...
 local gpu = graphic.findGpu(screen)
 
-local tbl = {}
+local index = 1
+local chars = {}
+local fores = {}
+local backs = {}
 for cy = y, y + (sy - 1) do
     for cx = x, x + (sx - 1) do
-        local ok, data1, data2, data3 = pcall(gpu.get, cx, cy)
+        local ok, char, fore, back = pcall(gpu.get, cx, cy)
         if ok then
-            table.insert(tbl, {cx, cy, {data1, data2, data3}})
-        else
-            table.insert(tbl, {cx, cy, {" ", 0, 0}})
+            chars[index] = char
+            fores[index] = fore
+            backs[index] = back
         end
+        index = index + 1
     end
 end
 
@@ -18,26 +22,39 @@ return function()
     local gpu = graphic.findGpu(screen)
     graphic.update(screen)
 
-    local oldFore, oldBack, oldX, oldY = tbl[1][3][2], tbl[1][3][3], tbl[1][1], tbl[1][2]
+    local oldFore, oldBack, oldX, oldY = fores[1], backs[1], x, y
     local buff = ""
-    for i, v in ipairs(tbl) do
-        local fore, back, char = v[3][2], v[3][3], v[3][1]
-        if fore ~= oldFore or back ~= oldBack or oldY ~= v[2] then
-            gpu.setForeground(oldFore)
-            gpu.setBackground(oldBack)
-            gpu.set(oldX, oldY, buff)
 
-            oldFore = fore
-            oldBack = back
-            oldX = v[1]
-            oldY = v[2]
-            buff = char
-        else
-            buff = buff .. char
+    local cx, cy = x, y
+    for i = 1, index do
+        local fore, back, char = fores[i], backs[i], chars[i]
+
+        if char then
+            if fore ~= oldFore or back ~= oldBack or oldY ~= cy then
+                gpu.setForeground(oldFore)
+                gpu.setBackground(oldBack)
+                gpu.set(oldX, oldY, buff)
+
+                oldFore = fore
+                oldBack = back
+                oldX = cx
+                oldY = cy
+                buff = char
+            else
+                buff = buff .. char
+            end
+        end
+
+        cx = cx + 1
+        if cx >= x + sx then
+            cx = x
+            cy = cy + 1
         end
     end
 
-    gpu.setForeground(oldFore)
-    gpu.setBackground(oldBack)
-    gpu.set(oldX, oldY, buff)
+    if oldFore then
+        gpu.setForeground(oldFore)
+        gpu.setBackground(oldBack)
+        gpu.set(oldX, oldY, buff)
+    end
 end
