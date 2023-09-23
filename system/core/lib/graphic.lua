@@ -18,7 +18,7 @@ graphic.screensBuffers = {}
 graphic.globalUpdated = false
 graphic.updated = {}
 graphic.allowBuffer = false
-graphic.allowSoftwareBuffer = computer.totalMemory() / 1024 > 400 --в разработке
+graphic.allowSoftwareBuffer = computer.totalMemory() / 1024 > 400
 graphic.windows = setmetatable({}, {__mode = "v"})
 graphic.inputHistory = {}
 graphic.disableBuffers = {}

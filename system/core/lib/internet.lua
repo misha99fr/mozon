@@ -8,10 +8,11 @@ function internet.getInternetFile(url)
         return nil, "no internet-card"
     end
 
-    local handle, data, result, reason = inet.request(url), ""
+    local handle = inet.request(url)
+    local data = ""
     if handle then
         while true do
-            result, reason = handle.read(math.huge) 
+            local result, reason = handle.read(math.huge) 
             if result then
                 data = data .. result
             else
