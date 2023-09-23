@@ -157,5 +157,5 @@ function serialization.unserialization(data)
     return output
 end
 
-serialization.unloaded = true
+serialization.unloadable = true
 return serialization

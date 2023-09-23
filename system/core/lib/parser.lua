@@ -44,5 +44,5 @@ function parser.toLines(str, max)
     return parser.toParts({len = unicode.wlen, sub = unicode.sub}, str, max)
 end
 
-parser.unloaded = true
+parser.unloadable = true
 return parser

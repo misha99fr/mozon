@@ -16,10 +16,10 @@ local function getFile(fs, path)
     return buffer
 end
 
-local bootfile = "/system/core/startup.lua"
+local bootfile = "/system/core/bootloader.lua"
 if tmpfs.exists("/bootTo") then
     bootfile = assert(getFile(tmpfs, "/bootTo"))
     tmpfs.remove("/bootTo")
 end
 
-assert(load(assert(getFile(bootfs, bootfile)), "=system_startup", nil, _ENV))()
+assert(load(assert(getFile(bootfs, bootfile)), "=" .. bootfile, nil, _ENV))()

@@ -91,5 +91,5 @@ function colors.colorMul(color, mul)
     return colors.blend(r * mul, g * mul, b * mul)
 end
 
-colors.unloaded = true
+colors.unloadable = true
 return colors

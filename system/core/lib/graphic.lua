@@ -7,12 +7,13 @@ local colors = require("colors")
 local cache = require("cache")
 local lastinfo = require("lastinfo")
 
-local isSyntaxInstalled = package.isInstalled("syntaxHighlighting")
+local isSyntaxInstalled = package.isInstalled("syntax")
+local isVGpuInstalled = package.isInstalled("vgpu")
 
 ------------------------------------
 
 local graphic = {}
-graphic.unloaded = true
+graphic.unloadable = true
 graphic.screensBuffers = {}
 graphic.globalUpdated = false
 graphic.updated = {}
@@ -292,7 +293,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                 table.insert(chars, {hidden and graphic.hideChar or unicode.sub(str, i, i), getForeCol(i, foreground), getBackCol(i)})
             end
             if syntax == "lua" and isSyntaxInstalled then
-                for index, value in ipairs(require("syntaxHighlighting").parse(str)) do
+                for index, value in ipairs(require("syntax").parse(str)) do
                     local isBreak
                     for i = 1, unicode.len(value[3]) do
                         local setTo = value[5] + (i - 1)
@@ -677,6 +678,7 @@ end
 graphic.gpuPrivateList = {} --для приватизации видеокарт, дабы избежать "кражи" другими процессами, добовляйте так graphic.gpuPrivateList[gpuAddress] = true
 
 local bindCache = {}
+local vgpus = {}
 function graphic.findGpuAddress(screen)
     if bindCache[screen] then return bindCache[screen] end
 
@@ -719,6 +721,14 @@ function graphic.findGpu(screen)
     
     if bestGpu then
         local gpu = component.proxy(bestGpu)
+
+        if graphic.allowSoftwareBuffer then
+            if vgpus[bestGpu] then return vgpus[bestGpu] end
+            if isVGpuInstalled then
+                vgpus[bestGpu] = require("vgpu").create(gpu)
+            end
+        end
+
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
@@ -736,6 +746,7 @@ function graphic.findGpu(screen)
             end
         end
 
+        if vgpus[bestGpu] then return vgpus[bestGpu] end
         return gpu
     end
 end
@@ -746,19 +757,8 @@ event.listen(nil, function(eventType, _, ctype)
     end
 end)
 
-do
-    local gpu = component.proxy(component.list("gpu")() or "")
-
-    if gpu and gpu.setActiveBuffer then
-        event.timer(0.05, function()
-            graphic.forceUpdate()
-        end, math.huge)
-    end
-end
-
 function graphic.forceUpdate()
-    if not graphic.allowBuffer then return end
-    if graphic.globalUpdated then
+    if graphic.allowBuffer and graphic.globalUpdated then
         for address, ctype in component.list("screen") do
             if graphic.isBufferAllow(address) then
                 if graphic.updated[address] then
@@ -768,6 +768,27 @@ function graphic.forceUpdate()
             end
         end
         graphic.globalUpdated = false
+    end
+    if graphic.allowSoftwareBuffer then
+        for address, ctype in component.list("screen") do
+            local vgpu = graphic.findGpu(address)
+            if vgpu and vgpu.update then --is vgpu
+                vgpu.update()
+            end
+        end
+    end
+end
+
+do
+    local gpu = component.proxy(component.list("gpu")() or "")
+
+    if gpu then
+        --[[
+        event.timer(0.1, function()
+            graphic.forceUpdate()
+        end, math.huge)
+        ]]
+        event.hyperTimer(graphic.forceUpdate)
     end
 end
 

@@ -1,7 +1,7 @@
 local unicode = require("unicode")
 local gui_container = require("gui_container")
 local colors = gui_container.colors
-local syntaxHighlighting = {}
+local syntax = {}
 local keywords = {
     ["function"] = colors.magenta,
     ["return"] = colors.magenta,
@@ -22,7 +22,7 @@ local keywords = {
     ["do"] = colors.purple
 }
 
-function syntaxHighlighting.parse(code)
+function syntax.parse(code)
     local function spl(str)
         local lst = {}
         local oldChrType
@@ -98,12 +98,12 @@ function syntaxHighlighting.parse(code)
     return obj
 end
 
-function syntaxHighlighting.draw(x, y, obj, gpu)
+function syntax.draw(x, y, obj, gpu)
     for index, value in ipairs(obj) do
         gpu.setForeground(value[4])
         gpu.set((x - 1) + value[1], (y - 1) + value[2], value[3])
     end
 end
 
-syntaxHighlighting.unloaded = true
-return syntaxHighlighting
+syntax.unloadable = true
+return syntax

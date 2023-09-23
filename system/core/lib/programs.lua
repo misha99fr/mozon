@@ -2,14 +2,14 @@ local fs = require("filesystem")
 local unicode = require("unicode")
 local paths = require("paths")
 local package = require("package")
-local calls = require("calls")
+local bootloader = require("bootloader")
 local event = require("event")
 
 ------------------------------------
 
 local programs = {}
-programs.paths = {"/data/bin", "/vendor/bin", "/system/bin", "/system/core/usr/bin", "/system/core/bin"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
-programs.unloaded = true
+programs.paths = {"/data/bin", "/vendor/bin", "/system/bin", "/system/core/bin"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
+programs.unloadable = true
 
 function programs.find(name)
     if unicode.sub(name, 1, 1) == "/" then
@@ -49,7 +49,7 @@ function programs.load(name, mode, env)
     local data = file.readAll()
     file.close()
     
-    local code, err = load(data, "=" .. path, mode, env or createEnv())
+    local code, err = load(data, "=" .. path, mode, env or bootloader.createEnv())
     if not code then return nil, err end
 
     return code

@@ -2,6 +2,7 @@ local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
 local paths = require("paths")
+local bootloader = require("bootloader")
 
 ------------------------------------
 
@@ -253,7 +254,7 @@ function filesystem.readFile(path)
 end
 
 
-filesystem.bootaddress = computer.getBootAddress()
+filesystem.bootaddress = bootloader.bootaddress
 
 if not _G.FS_DISABLEAUTOMOUNT then
     assert(filesystem.mount(filesystem.bootaddress, "/"))

@@ -1,9 +1,10 @@
+local system = require("system")
 local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
 
 function coroutine.xpcall(co, ...)
-    local output = {coroutine.resume(co, ...)}
+    local output = {system.checkExitinfo(coroutine.resume(co, ...))}
     if not output[1] then
         return nil, output[2], debug.traceback(co)
     end

@@ -74,14 +74,21 @@ end
 --ошибки в функции переданой в hyperListen будут переданы в вызвавщий pullSignal
 function event.hyperListen(func)
     checkArg(1, func, "function")
-    
     local pullSignal = raw_computer_pullSignal
     local unpack = table.unpack
-
     raw_computer_pullSignal = function (time)
         local eventData = {pullSignal(time)}
-        func(eventData)
+        func(unpack(eventData))
         return unpack(eventData)
+    end
+end
+
+function event.hyperTimer(func)
+    checkArg(1, func, "function")
+    local pullSignal = raw_computer_pullSignal
+    raw_computer_pullSignal = function (time)
+        func()
+        return pullSignal(time)
     end
 end
 
@@ -155,7 +162,7 @@ local function runThreads(eventData)
                 elseif not v.dead and v.enable then --если поток спит или умер то его потомки так-же не будут работать
                     v.out = {coroutine.xpcall(v.thread, table.unpack(v.args or eventData))}
                     if not v.out[1] then
-                        event.errLog("thread error: " .. tostring(v.out[2] or "unknown"))
+                        event.errLog("thread error: " .. tostring(v.out[2] or "unknown") .. " " .. tostring(v.out[3] or "unknown"))
                     end
 
                     v.args = nil
@@ -170,7 +177,7 @@ end
 local function runCallback(isTimer, func, index, ...)
     local oldState = event.isListen
     event.isListen = true
-    local ok, err = pcall(func, ...)
+    local ok, err = xpcall(func, debug.traceback, ...)
     event.isListen = oldState
     if ok then
         if err == false then --таймер/слушатель хочет отключиться

@@ -4,6 +4,7 @@ local package = require("package")
 local cache = require("cache")
 local event = require("event")
 local lastinfo = require("lastinfo")
+local component = require("component")
 local system = {}
 
 -------------------------------------------------
@@ -58,6 +59,76 @@ function system.getCpuLevel()
     end
 
     return processor
+end
+
+function system.getCurrentComponentCount()
+    local count = 0
+    for _, ctype in natives.component.list() do
+        if ctype == "filesystem" then --файловые системы жрут 0.25 бюджета компанентов, и их можно подключить в читыри раза больше чем других компанентов
+            count = count + 0.25
+        else
+            count = count + 1
+        end
+    end
+    return count - 1 --свой комп не учитываеться в opencomputers
+end
+
+function system.getMaxComponentCount() --пока что не учитывает компанентные шины, так как они не детектяться в getDeviceInfo
+    local cpu = system.getCpuLevel()
+    if cpu == 1 then
+        return 8
+    elseif cpu == 2 then
+        return 12
+    elseif cpu == 3 then
+        return 16
+    else
+        return -1
+    end
+end
+
+function system.getDiskLevel(address) --fdd, tier1, tier2, tier3, raid, tmp, unknown
+    local info = lastinfo.deviceinfo[address]
+    local clock = info and info.clock
+
+    if address == computer.tmpAddress() then
+        return "tmp"
+    elseif clock == "20/20/20" then
+        return "fdd"
+    elseif clock == "300/300/120" then
+        return "raid"
+    elseif clock == "80/80/40" then
+        return "tier1"
+    elseif clock == "140/140/60" then
+        return "tier2"
+    elseif clock == "200/200/80" then
+        return "tier3"
+    else
+        return "unknown"
+    end
+end
+
+function system.isLikeOSDisk(address)
+    local signature = "--likeOS core"
+
+    local file = component.invoke(address, "open", "/init.lua", "rb")
+    if file then
+        local data = invoke(address, "read", file, #signature)
+        component.invoke(address, "close", file)
+        return signature == data
+    end
+    return false
+end
+
+function system.checkExitinfo(...)
+    local result = {...}
+    if not result[1] and type(result[2]) == "table" and result[2].reason == "interrupted" then
+        if result[2].code == 0 then
+            return true
+        else
+            return false, "terminated with exit-code: " .. tostring(result[2].code)
+        end
+    end
+    return table.unpack(result)
 end
 
 -------------------------------------------------

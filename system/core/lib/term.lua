@@ -106,5 +106,5 @@ function term:readLn(hidden, buffer, syntax, disHistory)
     return out
 end
 
-term.unloaded = true
+term.unloadable = true
 return term

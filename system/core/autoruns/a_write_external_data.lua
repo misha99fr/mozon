@@ -5,6 +5,7 @@ local computer = require("computer")
 local component = require("component")
 local serialization = require("serialization")
 local lastinfo = require("lastinfo")
+local registry = require("registry")
 
 ------------------------------------
 
@@ -19,7 +20,7 @@ end
 
 ------------------------------------
 
-if not vendor.doNotWriteExternalData then
+if not registry.doNotWriteExternalData then
     write("devicetype", system.getDeviceType())
     write("deviceaddress", computer.address())
     write("deviceinfo", serialization.serialization(lastinfo.deviceinfo))

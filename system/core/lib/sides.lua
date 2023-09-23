@@ -66,5 +66,5 @@ setmetatable(sides, metatable)
 
 -------------------------------------------------------------------------------
 
-sides.unloaded = true
+sides.unloadable = true
 return sides

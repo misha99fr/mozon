@@ -29,5 +29,5 @@ function internet.getInternetFile(url)
     end
 end
 
-internet.unloaded = true
+internet.unloadable = true
 return internet

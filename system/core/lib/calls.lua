@@ -3,11 +3,12 @@
 local fs = require("filesystem")
 local unicode = require("unicode")
 local paths = require("paths")
+local bootloader = require("bootloader")
 
 ------------------------------------
 
 local calls = {} --calls позваляет вызывать функции с жеского диска, что экономит оперативную память
-calls.paths = {"/data/calls", "/vendor/calls", "/system/calls", "/system/core/usr/calls", "/system/core/calls"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
+calls.paths = {"/data/calls", "/vendor/calls", "/system/calls", "/system/core/calls"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
 calls.loaded = { --тут записаны функции которые раньше были hdd функциями, но стали перемешены в библиотеки
     map = math.map,
     constrain = math.clamp,
@@ -42,7 +43,7 @@ calls.loaded = { --тут записаны функции которые ран�
         return require("internet").getInternetFile(url)
     end,
 
-    createEnv = createEnv,
+    createEnv = bootloader.createEnv,
     writebit = bit32.writebit,
     readbit = bit32.readbit,
 
@@ -71,6 +72,10 @@ calls.loaded = { --тут записаны функции которые ран�
     end,
     toPartsUnicode = function (str, max)
         return require("parser").toParts(unicode, str, max)
+    end,
+
+    isLikeOsDisk = function (address)
+        return require("system").isLikeOSDisk(address)
     end
 } --вы можете записать сюда функции которые не должны выгружаться
 calls.cache = {}

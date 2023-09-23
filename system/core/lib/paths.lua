@@ -109,5 +109,5 @@ function paths.hideExtension(path)
     end
 end
 
-paths.unloaded = true
+paths.unloadable = true
 return paths

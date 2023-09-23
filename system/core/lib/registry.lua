@@ -3,7 +3,7 @@ local serialization = require("serialization")
 
 --------------------------------
 
-local registry = {unloaded = true, data = {}, path = "/data/registry.dat"}
+local registry = {unloadable = true, data = {}, path = "/data/registry.dat"}
 if fs.exists(registry.path) then
     local content = fs.readFile(registry.path)
     if content then

@@ -10,5 +10,5 @@ function uuid.next()
     r(0,255),r(0,255),r(0,255),r(0,255),r(0,255),r(0,255))
 end
 
-uuid.unloaded = true
+uuid.unloadable = true
 return uuid

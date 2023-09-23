@@ -49,11 +49,15 @@ function bit32.readbit(byte, index)
     return byte >> index & 1 == 1
 end
 
-function bit32.writebit(byte, index, value)
+function bit32.writebit(byte, index, newstate)
     local current = bit32.readbit(byte, index)
 
-    if current ~= value then
-        byte = byte + (2 ^ index)
+    if current ~= newstate then
+        if newstate then
+            byte = byte + (2 ^ index)
+        else
+            byte = byte - (2 ^ index)
+        end
     end
 
     return math.floor(byte)

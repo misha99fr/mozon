@@ -131,5 +131,5 @@ function afpx.unpack(inputpath, dir)
     return table.unpack(ret)
 end
 
-afpx.unloaded = true
+afpx.unloadable = true
 return afpx
