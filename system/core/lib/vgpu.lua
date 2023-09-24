@@ -164,7 +164,11 @@ function vgpu.create(gpu, screen)
         oy = math.floor(oy)
 
         --обновляем картинку на экране
-        obj.update()
+        if updated then
+            obj.update()
+        else
+            init()
+        end
 
         --фактически копируем картинку
         gpu.copy(x, y, sx, sy, ox, oy)
