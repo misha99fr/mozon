@@ -131,6 +131,10 @@ function system.checkExitinfo(...)
     return table.unpack(result)
 end
 
+function system.getCharge()
+    return math.clamp(math.ceil(math.map(computer.energy(), 0, computer.maxEnergy(), 0, 100) + 0.5), 0, 100)
+end
+
 -------------------------------------------------
 
 local currentUnloadState

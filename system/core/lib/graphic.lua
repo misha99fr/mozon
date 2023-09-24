@@ -16,7 +16,7 @@ local graphic = {}
 graphic.screensBuffers = {}
 graphic.updated = {}
 graphic.allowHardwareBuffer = false
-graphic.allowSoftwareBuffer = computer.totalMemory() / 1024 > 400
+graphic.allowSoftwareBuffer = false
 graphic.windows = setmetatable({}, {__mode = "v"})
 graphic.inputHistory = {}
 
@@ -669,9 +669,11 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
         obj.selected = gpu and gpu.getDepth() == 1
     end
 
-    if obj.selected then
+    if obj.selected then --за раз может быть активно только одно окно
         for i, window in ipairs(graphic.windows) do
-            window.selected = false
+            if window.screen == screen then
+                window.selected = false
+            end
         end
     end
 
@@ -724,11 +726,8 @@ function graphic.findGpu(screen)
     if bestGpu then
         local gpu = component.proxy(bestGpu)
 
-        if graphic.allowSoftwareBuffer then
-            if graphic.vgpus[bestGpu] then return graphic.vgpus[bestGpu] end
-            if isVGpuInstalled then
-                graphic.vgpus[bestGpu] = require("vgpu").create(gpu)
-            end
+        if graphic.allowSoftwareBuffer and isVGpuInstalled and not graphic.vgpus[screen] then
+            graphic.vgpus[screen] = require("vgpu").create(gpu, screen)
         end
 
         if gpu.getScreen() ~= screen then
@@ -750,7 +749,7 @@ function graphic.findGpu(screen)
             end
         end
 
-        if graphic.vgpus[bestGpu] then return graphic.vgpus[bestGpu] end
+        if graphic.vgpus[screen] then return graphic.vgpus[screen] end
         return gpu
     end
 end
@@ -921,6 +920,11 @@ end)
 
 function graphic.screenshot(screen, x, y, sx, sy)
     local gpu = graphic.findGpu(screen)
+    x = x or 1
+    y = y or 1
+    local rx, ry = gpu.getResolution()
+    sx = sx or rx
+    sy = sy or ry
 
     local index = 1
     local chars = {}

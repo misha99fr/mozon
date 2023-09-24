@@ -1,7 +1,7 @@
 local unicode = require("unicode")
 local vgpu = {}
 
-function vgpu.create(gpu)
+function vgpu.create(gpu, screen)
     local obj = {}
     
     local updated = false
@@ -184,6 +184,10 @@ function vgpu.create(gpu)
 
     function obj.update()
         if updated then
+            if gpu.getScreen() ~= screen then
+                gpu.bind(screen, false)
+            end
+
             local i = 0
             while i <= rsmax do
                 if backgrounds[i] and backgrounds[i] ~= currentBackgrounds[i] or foregrounds[i] ~= currentForegrounds[i] or chars[i] ~= currentChars[i] or (i + 1) % rx == 0 then
