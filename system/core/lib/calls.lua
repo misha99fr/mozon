@@ -76,6 +76,10 @@ calls.loaded = { --тут записаны функции которые ран�
 
     isLikeOsDisk = function (address)
         return require("system").isLikeOSDisk(address)
+    end,
+
+    screenshot = function (screen, x, y, sx, sy)
+        return require("graphic").screenshot(screen, x, y, sx, sy)
     end
 } --вы можете записать сюда функции которые не должны выгружаться
 calls.cache = {}

@@ -101,6 +101,7 @@ function vgpu.create(gpu)
             foregrounds[index] = currentFore
             chars[index] = unicode.sub(text, i, i)
         end
+
         updated = true
     end
 
@@ -130,6 +131,7 @@ function vgpu.create(gpu)
             end
         end
         ]]
+        
         for ix = x, x + (sizeX - 1) do
             for iy = y, y + (sizeY - 1) do
                 local index = (ix - 1) + ((iy - 1) * rx)
@@ -138,6 +140,7 @@ function vgpu.create(gpu)
                 chars[index] = char
             end
         end
+
         updated = true
     end
 
@@ -150,7 +153,6 @@ function vgpu.create(gpu)
         oy = math.floor(oy)
 
         --обновляем картинку на экране
-        updated = true
         obj.update()
 
         --фактически копируем картинку
