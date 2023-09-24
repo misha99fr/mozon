@@ -4,6 +4,16 @@ local vgpu = {}
 function vgpu.create(gpu, screen)
     local obj = {}
     
+    local function init()
+        if gpu.getScreen() ~= screen then
+            gpu.bind(screen, false)
+        end
+        if gpu.setActiveBuffer and gpu.getActiveBuffer() ~= 0 then
+            gpu.setActiveBuffer(0)
+        end
+    end
+    init()
+
     local updated = false
 
     local currentBackgrounds = {}
@@ -76,6 +86,7 @@ function vgpu.create(gpu, screen)
     function obj.setResolution(x, y)
         x = math.floor(x)
         y = math.floor(y)
+        init()
 
         gpu.setResolution(x, y)
         rx, ry = x, y
@@ -184,9 +195,7 @@ function vgpu.create(gpu, screen)
 
     function obj.update()
         if updated then
-            if gpu.getScreen() ~= screen then
-                gpu.bind(screen, false)
-            end
+            init()
 
             local i = 0
             while i <= rsmax do

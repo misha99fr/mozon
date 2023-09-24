@@ -730,6 +730,10 @@ function graphic.findGpu(screen)
             graphic.vgpus[screen] = require("vgpu").create(gpu, screen)
         end
 
+        if graphic.vgpus[screen] then
+            return graphic.vgpus[screen]
+        end
+
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
@@ -749,7 +753,6 @@ function graphic.findGpu(screen)
             end
         end
 
-        if graphic.vgpus[screen] then return graphic.vgpus[screen] end
         return gpu
     end
 end
