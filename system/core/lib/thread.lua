@@ -3,7 +3,7 @@ local thread = {}
 thread.threads = {}
 thread.mainthread = coroutine.running()
 
-function coroutine.xpcall(co, ...)
+function thread.xpcall(co, ...)
     local output = {system.checkExitinfo(coroutine.resume(co, ...))}
     if not output[1] then
         return nil, output[2], debug.traceback(co)
