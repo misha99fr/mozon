@@ -9,19 +9,21 @@ function internet.getInternetFile(url)
     end
 
     local handle = inet.request(url)
-    local data = ""
+    local data = {}
+    local dataI = 1
     if handle then
         while true do
             local result, reason = handle.read(math.huge) 
             if result then
-                data = data .. result
+                data[dataI] = result
+                dataI = dataI + 1
             else
                 handle.close()
                 
                 if reason then
                     return nil, reason
                 else
-                    return data
+                    return table.concat(data)
                 end
             end
         end
