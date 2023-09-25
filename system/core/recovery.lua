@@ -4,12 +4,28 @@ local computer = computer
 local unicode = unicode
 
 local screen = ...
+local deviceinfo = computer.getDeviceInfo()
 local gpu = component.proxy(component.list("gpu")() or "")
 if not gpu then return end
-bootloader.initScreen(gpu, screen)
+bootloader.initScreen(gpu, screen, 80, 25) --на экране с более низким разрешениям будет выбрано максимальное. на экране с более высоким установленное
 local rx, ry = gpu.getResolution()
 local centerY = math.floor(ry / 2)
 local keyboard = component.invoke(screen, "getKeyboards")[1]
+
+local function getDeviceType()
+    local function isType(ctype)
+        return component.list(ctype)() and ctype
+    end
+    
+    local function isServer()
+        local obj = deviceinfo[computer.address()]
+        if obj and obj.description and obj.description:lower() == "server" then
+            return "server"
+        end
+    end
+    
+    return isType("tablet") or isType("microcontroller") or isType("drone") or isType("robot") or isServer() or isType("computer") or "unknown"
+end
 
 local function invertColor()
     gpu.setBackground(gpu.setForeground(gpu.getBackground()))
@@ -83,10 +99,13 @@ local function menu(label, strs, funcs, withoutBackButton)
     end
 end
 
-local function info(text)
+local function info(strs)
     clearScreen()
-    centerPrint(centerY, text)
-    centerPrint(centerY + 1, "Press Enter To Continue")
+    table.insert(strs, "Press Enter To Continue")
+    for i, str in ipairs(strs) do
+        centerPrint((centerY + (i - 1)) - math.floor((#strs / 2) + 0.5), str)
+    end
+    
     while true do
         local eventData = {computer.pullSignal()}
         if eventData[1] == "key_down" and eventData[2] == keyboard then
@@ -99,28 +118,82 @@ end
 
 --------------------------------------------------------------
 
-menu(bootloader.coreversion .. " recovery", {
-    "Wipe Data / Factory Reset",
-}, {function (str)
-    menu(str, {
-        "No",
-        "No",
-        "No",
-        "No",
-        "No",
-        "No",
-        "Yes",
-        "No",
-        "No",
-        "No"
-    }, {nil, nil, nil, nil, nil, nil,
-    function ()
-        local result = {bootloader.bootfs.remove("/data")}
-        if not result[1] then
-            info(result[2] or "No Data Partition Found")
-        else
-            info("Data Successfully Wiped")
-        end
-        return true
-    end}, true)
-end})
+menu(bootloader.coreversion .. " recovery",
+    {
+        "Wipe Data / Factory Reset",
+        "Run Script From Url",
+        "Shutdown",
+        "Reboot",
+        "Reboot To Bios",
+        "Bootstrap",
+        "Info",
+    }, 
+    {
+        function (str)
+            menu(str,
+                {
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "Yes",
+                    "No",
+                    "No",
+                    "No"
+                },
+                {
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    function ()
+                        local result = {bootloader.bootfs.remove("/data")}
+                        if not result[1] then
+                            info({result[2] or "No Data Partition Found"})
+                        else
+                            info({"Data Successfully Wiped"})
+                        end
+                        return true
+                    end
+                },
+                true
+            )
+        end,
+        function ()
+            
+        end,
+        function ()
+            computer.shutdown()
+        end,
+        function ()
+            computer.shutdown(true)
+        end,
+        function ()
+            computer.shutdown("bios") --поддерживаеться малым количеством bios`ов
+        end,
+        function ()
+            pcall(bootloader.bootstrap)
+        end,
+        function ()
+            local deviceType = getDeviceType()
+            local function short(str)
+                str = tostring(str)
+                if rx <= 50 then
+                    return str:sub(1, 8)
+                end
+                return str
+            end
+            info(
+                {
+                    "Computer Address: " .. short(computer.address()),
+                    "Disk     Address: " .. short(bootloader.bootfs.address),
+                    "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType))
+                }
+            )
+        end,
+    }
+)

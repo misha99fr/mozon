@@ -132,6 +132,8 @@ function bootloader.initScreen(gpu, screen, rx, ry)
     local mx, my = gpu.maxResolution()
     rx = rx or mx
     ry = ry or my
+    if rx > mx then rx = mx end
+    if ry > my then ry = my end
 
     gpu.setDepth(1)
     gpu.setDepth(gpu.maxDepth())

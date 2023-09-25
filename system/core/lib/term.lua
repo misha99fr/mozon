@@ -64,7 +64,7 @@ function term:write(str)
         if i > 1 then
             self:newLine()
         end
-        for i2, line in ipairs(parser.toParts(unicode, lstr, self.sizeX - (self.cursorX - 1))) do
+        for i2, line in ipairs(parser.toLines(lstr, self.sizeX - (self.cursorX - 1))) do
             if i2 > 1 then
                 self:newLine()
             end
