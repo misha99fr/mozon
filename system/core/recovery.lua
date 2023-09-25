@@ -214,7 +214,65 @@ local function micro_userControl(str)
 end
 
 local function micro_robotMoving(str)
-    
+    local robot = component.proxy(component.list("robot")() or "")
+    if not robot then
+        info("This Program Only Works On The Robot")
+        return
+    end
+    --[[
+    menu(str,
+        {
+            "Forward",
+            "Up",
+            "Down",
+            "Turn Left",
+            "Turn Right"
+        },
+        {
+            function ()
+                robot.move(3)
+            end,
+            function ()
+                robot.move(1)
+            end,
+            function ()
+                robot.move(0)
+            end,
+            function ()
+                robot.turn(false)
+            end,
+            function ()
+                robot.turn(true)
+            end
+        }
+    )
+    ]]
+
+    clearScreen()
+    centerPrint(centerY - 1, "WASD - control")
+    centerPrint(centerY, "space/shift - up/down")
+    centerPrint(centerY + 1, "enter - exit")
+
+    while true do
+        local eventData = {computer.pullSignal()}
+        if eventData[1] == "key_down" and eventData[2] == keyboard then
+            if eventData[4] == 28 then
+                break
+            elseif eventData[4] == 17 then
+                robot.move(3)
+            elseif eventData[4] == 31 then
+                robot.move(2)
+            elseif eventData[4] == 30 then
+                robot.turn(false)
+            elseif eventData[4] == 32 then
+                robot.turn(true)
+            elseif eventData[4] == 57 then
+                robot.move(1)
+            elseif eventData[4] == 42 then
+                robot.move(0)
+            end
+        end
+    end
 end
 
 local function micro_microprograms(str)
