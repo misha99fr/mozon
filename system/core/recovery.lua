@@ -99,14 +99,21 @@ local function menu(label, strs, funcs, withoutBackButton)
     end
 end
 
-local function info(strs)
+local function info(strs, withoutWaitEnter)
     clearScreen()
-    table.insert(strs, "Press Enter To Continue")
+
+    if type(strs) ~= "table" then
+        strs = {strs}
+    end
+
+    if not withoutWaitEnter then
+        table.insert(strs, "Press Enter To Continue")
+    end
     for i, str in ipairs(strs) do
         centerPrint((centerY + (i - 1)) - math.floor((#strs / 2) + 0.5), str)
     end
     
-    while true do
+    while not withoutWaitEnter do
         local eventData = {computer.pullSignal()}
         if eventData[1] == "key_down" and eventData[2] == keyboard then
             if eventData[4] == 28 then
@@ -122,10 +129,9 @@ menu(bootloader.coreversion .. " recovery",
     {
         "Wipe Data / Factory Reset",
         "Run Script From Url",
-        "Shutdown",
-        "Reboot",
-        "Reboot To Bios",
+        "Run Script From Disk",
         "Bootstrap",
+        "Shutdown",
         "Info",
     }, 
     {
@@ -153,9 +159,9 @@ menu(bootloader.coreversion .. " recovery",
                     function ()
                         local result = {bootloader.bootfs.remove("/data")}
                         if not result[1] then
-                            info({result[2] or "No Data Partition Found"})
+                            info(result[2] or "No Data Partition Found")
                         else
-                            info({"Data Successfully Wiped"})
+                            info("Data Successfully Wiped")
                         end
                         return true
                     end
@@ -167,16 +173,37 @@ menu(bootloader.coreversion .. " recovery",
             
         end,
         function ()
-            computer.shutdown()
+            info("Booting...", true)
+            local result = "Successful Kernel Initialization"
+            local ok, err = pcall(bootloader.bootstrap)
+            if not ok then
+                result = tostring(err or "Unknown Error")
+            end
+            info(result)
         end,
-        function ()
-            computer.shutdown(true)
-        end,
-        function ()
-            computer.shutdown("bios") --поддерживаеться малым количеством bios`ов
-        end,
-        function ()
-            pcall(bootloader.bootstrap)
+        function (str)
+            menu(str,
+                {
+                    "Reboot To Bios",
+                    "Fast Reboot",
+                    "Reboot",
+                    "Shutdown"
+                },
+                {
+                    function ()
+                        computer.shutdown("bios") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                    end,
+                    function ()
+                        computer.shutdown("fast") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                    end,
+                    function ()
+                        computer.shutdown(true)
+                    end,
+                    function ()
+                        computer.shutdown()
+                    end
+                }
+            )
         end,
         function ()
             local deviceType = getDeviceType()
