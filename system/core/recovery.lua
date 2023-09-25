@@ -45,7 +45,7 @@ local function clearScreen()
     gpu.fill(1, 1, rx, ry, " ")
 end
 
-local function menu(label, strs, funcs, withoutBackButton)
+local function menu(label, strs, funcs, withoutBackButton, refresh)
     local selected = 1
 
     if not withoutBackButton then
@@ -77,6 +77,14 @@ local function menu(label, strs, funcs, withoutBackButton)
                     if funcs[selected](strs[selected]) then
                         break
                     else
+                        if refresh then
+                            local lstrs, lfuncs = refresh()
+                            if not withoutBackButton then
+                                table.insert(lstrs, "Back")
+                            end
+                            strs = lstrs
+                            funcs = lfuncs
+                        end
                         redraw()
                     end
                 else
@@ -129,6 +137,21 @@ local function input(str)
     
 end
 
+local function getNickname(str)
+    clearScreen()
+    centerPrint(centerY, str)
+    centerPrint(centerY + 1, "Press Enter To Get Your Nickname")
+    
+    while true do
+        local eventData = {computer.pullSignal()}
+        if eventData[1] == "key_down" and eventData[2] == keyboard then
+            if eventData[4] == 28 then
+                return eventData[5]
+            end
+        end
+    end
+end
+
 local function selectfile(proxy, folder)
     folder = folder or "/"
 
@@ -160,7 +183,34 @@ end
 -------------------------------------------------------------- micro programs
 
 local function micro_userControl(str)
-    
+    local function refresh()
+        local strs = {"Add User", "Auto User Add"}
+        local function add(nickname)
+            if nickname then
+                local ok, err = computer.addUser(nickname)
+                if not ok then
+                    info(err or "Unknown Error")
+                end
+            end
+        end
+        local funcs = {function ()
+            add(input("Enter Nickname> "))
+        end, function ()
+            add(getNickname("Auto User Add"))
+        end}
+        for _, nickname in ipairs({computer.users()}) do
+            table.insert(strs, nickname)
+            table.insert(funcs, function ()
+                local ok, err = computer.removeUser(nickname)
+                if not ok then
+                    info(err or "Unknown Error")
+                end
+            end)
+        end
+        return strs, funcs
+    end
+    local strs, funcs = refresh()
+    menu(str, strs, funcs, nil, refresh)
 end
 
 local function micro_robotMoving(str)
@@ -289,9 +339,9 @@ menu(bootloader.coreversion .. " recovery",
             end
 
             local ramSize = tostring(math.floor((computer.totalMemory() / 1024) + 0.5)) .. "KB"
+            ramSize = ramSize .. " / " .. tostring(math.floor(((computer.totalMemory() - computer.freeMemory()) / 1024) + 0.5)) .. "KB"
             local hddSize = tostring(math.floor((bootloader.bootfs.spaceTotal() / 1024) + 0.5)) .. "KB"
-
-            local userRamSize = tostring(math.floor((computer.totalMemory() / 1024) + 0.5)) .. "KB"
+            hddSize = hddSize .. " / " .. tostring(math.floor((bootloader.bootfs.spaceUsed() / 1024) + 0.5)) .. "KB"
 
             info(
                 {
@@ -299,8 +349,8 @@ menu(bootloader.coreversion .. " recovery",
                     "Disk     Address: " .. short(bootloader.bootfs.address),
                     "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType)),
                     "System  Runlevel: " .. short(bootloader.runlevel .. string.rep(" ", #bootloader.bootfs.address - #bootloader.runlevel)),
-                    "Total  RAM  Size: " .. short(ramSize .. string.rep(" ", #bootloader.bootfs.address - #ramSize)),
-                    "Total  HDD  Size: " .. short(hddSize .. string.rep(" ", #bootloader.bootfs.address - #hddSize))
+                    "Total/Used   RAM: " .. short(ramSize .. string.rep(" ", #bootloader.bootfs.address - #ramSize)),
+                    "Total/Used   HDD: " .. short(hddSize .. string.rep(" ", #bootloader.bootfs.address - #hddSize))
                 }
             )
         end,
