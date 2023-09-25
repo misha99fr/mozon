@@ -17,7 +17,15 @@ local bootloader = {} --библиотека загрузчика
 bootloader.bootaddress = computer.getBootAddress()
 bootloader.bootfs = component.proxy(bootloader.bootaddress)
 
------------------------------------- base funcs
+------------------------------------ bootloader constants
+
+bootloader.defaultShellPath = "/system/main.lua"
+
+------------------------------------ base functions
+
+function bootloader.yield() --катыльный способ вызвать прирывания дабы избежать краша(звук издаваться не будет так как функция завершаеться ошибкой из за переданого 0)
+    pcall(computer.beep, 0)
+end
 
 function bootloader.createEnv() --создает _ENV для программы, где _ENV будет личьный, а _G обший
     return setmetatable({_G = _G}, {__index = _G})
@@ -132,10 +140,66 @@ function bootloader.initScreen(gpu, screen, rx, ry)
     gpu.fill(1, 1, rx, ry, " ")
 end
 
+function bootloader.bootstrap()
+    --natives позваляет получить доступ к нетронутым методами библиотек computer и component
+    _G.natives = bootloader.dofile("/system/core/lib/natives.lua", bootloader.createEnv())
+
+    --на lua 5.3 нет встроеной либы bit32, но она нужна для совместимости, так что хай будет
+    if not bit32 then 
+        _G.bit32 = bootloader.dofile("/system/core/lib/bit32.lua", bootloader.createEnv())
+    end
+
+    --бут скрипты. тут инициализации всего и вся
+    do 
+        local path = "/system/core/boot/"
+        for i, v in ipairs(bootloader.bootfs.list(path) or {}) do
+            bootloader.dofile(path .. v, _G)
+        end
+    end
+
+    --package инициализирует библиотеки
+    local package = bootloader.dofile("/system/core/lib/package.lua", bootloader.createEnv(), bootloader)
+    _G.require = package.require
+    _G.computer = nil
+    _G.component = nil
+    _G.unicode = nil
+    _G.natives = nil
+   
+
+    --подгрузка основных библиотек системмы, эти библиотеки должны быть подключенны зарания чтобы система работала коректно1
+    --package.raw_reg("vcomponent", "/system/core/lib/vcomponent.lua")
+    package.raw_reg("paths",      "/system/core/lib/paths.lua")
+    package.raw_reg("filesystem", "/system/core/lib/filesystem.lua")
+    --package.raw_reg("calls",      "/system/core/lib/calls.lua")
+    require("vcomponent")
+    require("calls")
+    require("event")
+    require("system")
+
+    --проверка целосности системмы (юнит тесты)
+    bootloader.unittests("/system/core/unittests")
+    bootloader.unittests("/system/unittests")
+
+    --запуск автозагрузочных файлов ядра и дистрибутива
+    bootloader.autorunsIn("/system/core/luaenv")
+    bootloader.autorunsIn("/system/core/autoruns")
+    bootloader.autorunsIn("/system/autoruns")
+end
+
+function bootloader.runShell(path)
+    --запуск оболочки дистрибутива
+    if require("filesystem").exists(path) then
+        bootloader.bootSplash("Starting The Shell...")
+        assert(require("programs").load(path))()
+    else
+        bootloader.bootSplash("Shell Does Not Exist. Press Enter To Continue.")
+        bootloader.waitEnter()
+    end
+end
+
 ------------------------------------ registry
 
 local registry = {}
-
 do
     local registryPath = "/data/registry.dat"
     local mainRegistryPath = bootloader.find("registry.dat") --если он найдет файл в /data, значит он там есть и перезапись не требуеться
@@ -244,71 +308,23 @@ end
 
 ------------------------------------ bootstrap
 
-local ok, err = xpcall(function()
-    bootloader.bootSplash("Booting...")
+local err = "unknown"
 
-    --natives позваляет получить доступ к нетронутым методами библиотек computer и component
-    _G.natives = bootloader.dofile("/system/core/lib/natives.lua", bootloader.createEnv())
+bootloader.bootSplash("Booting...")
+bootloader.yield()
 
-    --на lua 5.3 нет встроеной либы bit32, но она нужна для совместимости, так что хай будет
-    if not bit32 then 
-        _G.bit32 = bootloader.dofile("/system/core/lib/bit32.lua", bootloader.createEnv())
+local bootstrapResult = {xpcall(bootloader.bootstrap, debug.traceback)}
+bootloader.yield()
+
+if bootstrapResult[1] then
+    local shellResult = {xpcall(bootloader.runShell, debug.traceback, bootloader.defaultShellPath)}
+    bootloader.yield()
+
+    if not shellResult[1] then
+        err = tostring(shellResult[2])
     end
-
-    --бут скрипты. тут инициализации всего и вся
-    do 
-        local path = "/system/core/boot/"
-        for i, v in ipairs(bootloader.bootfs.list(path) or {}) do
-            bootloader.dofile(path .. v, _G)
-        end
-    end
-
-    --package инициализирует библиотеки
-    local package = bootloader.dofile("/system/core/lib/package.lua", bootloader.createEnv(), bootloader)
-    _G.require = package.require
-    _G.computer = nil
-    _G.component = nil
-    _G.unicode = nil
-    _G.natives = nil
-   
-
-    --подгрузка основных библиотек системмы, эти библиотеки должны быть подключенны зарания чтобы система работала коректно1
-    --package.raw_reg("vcomponent", "/system/core/lib/vcomponent.lua")
-    package.raw_reg("paths",      "/system/core/lib/paths.lua")
-    package.raw_reg("filesystem", "/system/core/lib/filesystem.lua")
-    --package.raw_reg("calls",      "/system/core/lib/calls.lua")
-    require("vcomponent")
-    require("calls")
-    require("event")
-    require("system")
-
-    --проверка целосности системмы (юнит тесты)
-    bootloader.unittests("/system/core/unittests")
-    bootloader.unittests("/system/unittests")
-
-    --запуск автозагрузочных файлов ядра и дистрибутива
-    bootloader.autorunsIn("/system/core/luaenv")
-    bootloader.autorunsIn("/system/core/autoruns")
-    bootloader.autorunsIn("/system/autoruns")
-
-    --запуск оболочки дистрибутива
-    if require("filesystem").exists("/system/main.lua") then
-        bootloader.bootSplash("Running main.lua...")
-        local code, err = require("programs").load("/system/main.lua")
-        if not code then
-            error("failed to loading main.lua" .. err, 0)
-        end
-        code()
-    else
-        bootloader.bootSplash("main.lua does not exist. press enter to continue")
-        bootloader.waitEnter()
-    end
-end, debug.traceback)
-
-pullSignal(0.1) --во избежании краша
-
-if not err then
-    err = "unknown"
+else
+    err = tostring(bootstrapResult[2])
 end
 
 ------------------------------------ log error
@@ -329,7 +345,7 @@ end
 
 ------------------------------------ error output
 
-if log_ok then --если удалось записать log то комп перезагрузиться, а если не удалось то передаст ошибку в bios
+if log_ok and not registry.disableAutoReboot then --если удалось записать log то комп перезагрузиться, а если не удалось то передаст ошибку в bios
     shutdown(true)
 end
 error(err, 0)
