@@ -12,6 +12,8 @@ local rx, ry = gpu.getResolution()
 local centerY = math.floor(ry / 2)
 local keyboard = component.invoke(screen, "getKeyboards")[1]
 
+-------------------------------------------------------------- local api
+
 local function getDeviceType()
     local function isType(ctype)
         return component.list(ctype)() and ctype
@@ -123,13 +125,69 @@ local function info(strs, withoutWaitEnter)
     end
 end
 
---------------------------------------------------------------
+local function input(str)
+    
+end
+
+local function selectfile(proxy, folder)
+    folder = folder or "/"
+
+    local ret
+    local files = {}
+    local funcs = {}
+    local list = proxy.list(folder)
+    table.sort(list)
+    for _, filename in ipairs(list) do
+        local path = folder .. filename
+        table.insert(files, filename)
+        table.insert(funcs, function ()
+            if proxy.isDirectory(path) then
+                ret = selectfile(proxy, path)
+                if ret then
+                    return true
+                end
+            else
+                ret = path
+                return true
+            end
+        end)
+    end
+
+    menu("Select A File: " .. proxy.address:sub(1, 4) .. "-" .. folder, files, funcs)
+    return ret
+end
+
+-------------------------------------------------------------- micro programs
+
+local function micro_userControl(str)
+    
+end
+
+local function micro_robotMoving(str)
+    
+end
+
+local function micro_microprograms(str)
+    menu(str, 
+        {
+            "User Control",
+            "Robot Moving"
+        },
+        {
+            micro_userControl,
+            micro_robotMoving
+        }
+    )
+end
+
+-------------------------------------------------------------- menu
 
 menu(bootloader.coreversion .. " recovery",
     {
         "Wipe Data / Factory Reset",
         "Run Script From Url",
         "Run Script From Disk",
+        "Micro Programs",
         "Bootstrap",
         "Shutdown",
         "Info",
@@ -173,10 +231,22 @@ menu(bootloader.coreversion .. " recovery",
             
         end,
         function ()
-            
+            local path = selectfile(bootloader.bootfs)
+            if path then
+                local code, err = bootloader.loadfile(path, nil, _ENV)
+                if code then
+                    local ok, err = pcall(code, screen)
+                    if not ok then
+                        info({"Script Error", err})
+                    end
+                else
+                    info({"Script Error(syntax)", err})
+                end
+            end
         end,
+        micro_microprograms,
         function ()
-            info("Booting...", true)
+            info({"Initializing The Kernel", "Please Wait"}, true)
             local result = "Successful Kernel Initialization"
             local ok, err = pcall(bootloader.bootstrap)
             if not ok then
@@ -187,23 +257,23 @@ menu(bootloader.coreversion .. " recovery",
         function (str)
             menu(str,
                 {
-                    "Reboot To Bios",
-                    "Fast Reboot",
+                    "Shutdown",
                     "Reboot",
-                    "Shutdown"
+                    "Fast Reboot",
+                    "Reboot To Bios",
                 },
                 {
                     function ()
-                        computer.shutdown("bios") --поддерживаеться малым количеством bios`ов(по сути только моими)
-                    end,
-                    function ()
-                        computer.shutdown("fast") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                        computer.shutdown()
                     end,
                     function ()
                         computer.shutdown(true)
                     end,
                     function ()
-                        computer.shutdown()
+                        computer.shutdown("fast") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                    end,
+                    function ()
+                        computer.shutdown("bios") --поддерживаеться малым количеством bios`ов(по сути только моими)
                     end
                 }
             )
@@ -217,12 +287,20 @@ menu(bootloader.coreversion .. " recovery",
                 end
                 return str
             end
+
+            local ramSize = tostring(math.floor((computer.totalMemory() / 1024) + 0.5)) .. "KB"
+            local hddSize = tostring(math.floor((bootloader.bootfs.spaceTotal() / 1024) + 0.5)) .. "KB"
+
+            local userRamSize = tostring(math.floor((computer.totalMemory() / 1024) + 0.5)) .. "KB"
+
             info(
                 {
                     "Computer Address: " .. short(computer.address()),
                     "Disk     Address: " .. short(bootloader.bootfs.address),
                     "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType)),
-                    "System  Runlevel: " .. short(bootloader.runlevel .. string.rep(" ", #bootloader.bootfs.address - #bootloader.runlevel))
+                    "System  Runlevel: " .. short(bootloader.runlevel .. string.rep(" ", #bootloader.bootfs.address - #bootloader.runlevel)),
+                    "Total  RAM  Size: " .. short(ramSize .. string.rep(" ", #bootloader.bootfs.address - #ramSize)),
+                    "Total  HDD  Size: " .. short(hddSize .. string.rep(" ", #bootloader.bootfs.address - #hddSize))
                 }
             )
         end,
