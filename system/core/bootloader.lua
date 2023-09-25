@@ -17,6 +17,11 @@ local bootloader = {} --библиотека загрузчика
 bootloader.bootaddress = computer.getBootAddress()
 bootloader.bootfs = component.proxy(bootloader.bootaddress)
 bootloader.coreversion = _G._COREVERSION
+bootloader.runlevel = "init"
+
+function computer.runlevel()
+    return bootloader.runlevel
+end
 
 ------------------------------------ bootloader constants
 
@@ -144,6 +149,8 @@ function bootloader.initScreen(gpu, screen, rx, ry)
 end
 
 function bootloader.bootstrap()
+    if bootloader.runlevel ~= "init" then error("bootstrap can only be started with runlevel init", 0) end
+
     --natives позваляет получить доступ к нетронутым методами библиотек computer и component
     _G.natives = bootloader.dofile("/system/core/lib/natives.lua", bootloader.createEnv())
 
@@ -187,6 +194,9 @@ function bootloader.bootstrap()
     bootloader.autorunsIn("/system/core/luaenv")
     bootloader.autorunsIn("/system/core/autoruns")
     bootloader.autorunsIn("/system/autoruns")
+
+    --установка runlevel
+    bootloader.runlevel = "kernel"
 end
 
 function bootloader.runShell(path)

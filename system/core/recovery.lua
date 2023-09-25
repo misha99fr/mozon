@@ -173,6 +173,9 @@ menu(bootloader.coreversion .. " recovery",
             
         end,
         function ()
+            
+        end,
+        function ()
             info("Booting...", true)
             local result = "Successful Kernel Initialization"
             local ok, err = pcall(bootloader.bootstrap)
@@ -218,7 +221,8 @@ menu(bootloader.coreversion .. " recovery",
                 {
                     "Computer Address: " .. short(computer.address()),
                     "Disk     Address: " .. short(bootloader.bootfs.address),
-                    "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType))
+                    "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType)),
+                    "System  Runlevel: " .. short(bootloader.runlevel .. string.rep(" ", #bootloader.bootfs.address - #bootloader.runlevel))
                 }
             )
         end,
