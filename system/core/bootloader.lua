@@ -16,6 +16,7 @@ _G._OSVERSION = _G._COREVERSION --это перезаписываеться в �
 local bootloader = {} --библиотека загрузчика
 bootloader.bootaddress = computer.getBootAddress()
 bootloader.bootfs = component.proxy(bootloader.bootaddress)
+bootloader.coreversion = _G._COREVERSION
 
 ------------------------------------ bootloader constants
 
@@ -274,7 +275,7 @@ if not registry.disableRecovery then
     local gpu = component.proxy(component.list("gpu")() or "")
 
     if gpu and component.list("screen")() then
-        local recoveryScreen
+        local recoveryScreen, playerNickname
         for i = 1, 10 do
             local eventData = {computer.pullSignal(0.1)}
             if eventData[1] == "key_down" and eventData[4] == 19 then
@@ -283,6 +284,7 @@ if not registry.disableRecovery then
                     for i, keyboard in ipairs(keyboards) do
                         if keyboard == eventData[2] then
                             recoveryScreen = address
+                            playerNickname = eventData[6]
                             goto exit
                         end
                     end
@@ -292,12 +294,14 @@ if not registry.disableRecovery then
         ::exit::
 
         if recoveryScreen then
-            bootloader.bootSplash("RECOVERY MOD")
-            bootloader.initScreen(gpu, recoveryScreen)
+            bootloader.bootSplash("RECOVERY MODE")
 
             local recoveryPath = bootloader.find("recovery.lua")
             if recoveryPath then
-                assert(xpcall(assert(bootloader.loadfile(recoveryPath)), debug.traceback, gpu, bootloader.bootfs))
+                local env = bootloader.createEnv()
+                env.bootloader = bootloader
+                assert(xpcall(assert(bootloader.loadfile(recoveryPath, nil, env)), debug.traceback, recoveryScreen, playerNickname))
+                computer.shutdown("fast")
             else
                 bootloader.bootSplash("failed to open recovery. press enter to continue")
                 bootloader.waitEnter()
