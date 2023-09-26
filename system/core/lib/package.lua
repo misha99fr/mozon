@@ -17,6 +17,7 @@ for key, value in pairs(_G) do
     end
 end
 package.cache = {}
+package.loadingList = {}
 
 function package.find(name)
     local fs = require("filesystem")
@@ -51,18 +52,22 @@ function package.find(name)
     end
 end
 
-function package.require(name, force)
-    local libtbl
+function package.require(name)
+    local libtbl = package.loaded[name] or package.cache[name]
+    if libtbl then return libtbl end
 
     local function loadLib()
-        if libtbl then return end
+        if libtbl then return libtbl end
         if not package.loaded[name] and not package.cache[name] then
             local finded = package.find(name)
             if not finded then
                 error("lib " .. name .. " is not found", 3)
             end
 
+            package.loadingList[name] = true
             local lib = assert(loadfile(finded, nil, bootloader.createEnv()))()
+            package.loadingList[name] = nil
+
             if type(lib) == "table" and lib.unloadable then
                 package.cache[name] = lib
             else
@@ -76,17 +81,17 @@ function package.require(name, force)
         return libtbl
     end
 
-    if force or bootloader.runlevel == "init" then
+    if package.loadingList[name] then
+        return setmetatable({}, {__index = function (_, key)
+            loadLib()
+            return libtbl[key]
+        end, __newindex = function (_, key, value)
+            loadLib()
+            libtbl[key] = value
+        end})
+    else
         return loadLib()
     end
-    
-    return setmetatable({}, {__index = function (_, key)
-        loadLib()
-        return libtbl[key]
-    end, __newindex = function (_, key, value)
-        loadLib()
-        libtbl[key] = value
-    end})
 end
 
 function package.get(name)
