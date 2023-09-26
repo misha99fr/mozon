@@ -196,8 +196,8 @@ function bootloader.bootstrap()
     lastinfo.update()
     for address, ctype in component.list() do
         event.push("component_added", address, ctype)
+        event.yield()
     end
-    event.sleep(0.1)
 
     --установка runlevel
     bootloader.runlevel = "kernel"
