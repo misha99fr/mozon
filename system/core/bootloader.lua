@@ -168,6 +168,7 @@ function bootloader.bootstrap()
     end
 
     --package инициализирует библиотек
+    bootloader.dofile("/system/core/luaenv/a_base.lua", bootloader.createEnv())
     local package = bootloader.dofile("/system/core/lib/package.lua", bootloader.createEnv(), bootloader)
     _G.require = package.require
     _G.computer = nil

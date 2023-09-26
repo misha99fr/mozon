@@ -51,29 +51,42 @@ function package.find(name)
     end
 end
 
-function package.require(name)
-    if not package.loaded[name] and not package.cache[name] then
-        local finded = package.find(name)
-        if not finded then
-            error("lib " .. name .. " is not found", 2)
-        end
+function package.require(name, force)
+    local libtbl
 
-        local fs = require("filesystem")
-        local file = assert(fs.open(finded, "rb"))
-        local data = file.readAll()
-        file.close()
+    local function loadLib()
+        if libtbl then return end
+        if not package.loaded[name] and not package.cache[name] then
+            local finded = package.find(name)
+            if not finded then
+                error("lib " .. name .. " is not found", 3)
+            end
 
-        local lib = assert(load(data, "=" .. finded, nil, bootloader.createEnv()))()
-        if type(lib) == "table" and lib.unloadable then
-            package.cache[name] = lib
-        else
-            package.loaded[name] = lib
+            local lib = assert(loadfile(finded, nil, bootloader.createEnv()))()
+            if type(lib) == "table" and lib.unloadable then
+                package.cache[name] = lib
+            else
+                package.loaded[name] = lib
+            end
         end
+        if not package.loaded[name] and not package.cache[name] then
+            error("lib " .. name .. " is not found" , 3)
+        end
+        libtbl = package.loaded[name] or package.cache[name]
+        return libtbl
     end
-    if not package.loaded[name] and not package.cache[name] then
-        error("lib " .. name .. " is not found" , 2)
+
+    if force or bootloader.runlevel == "init" then
+        return loadLib()
     end
-    return package.loaded[name] or package.cache[name]
+    
+    return setmetatable({}, {__index = function (_, key)
+        loadLib()
+        return libtbl[key]
+    end, __newindex = function (_, key, value)
+        loadLib()
+        libtbl[key] = value
+    end})
 end
 
 function package.get(name)
