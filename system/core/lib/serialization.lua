@@ -1,11 +1,14 @@
 local serialization = {}
 
-function serialization.serialization(value, pretty)
-    local local_pairs = function(tbl)
-        local mt = getmetatable(tbl)
-        return (mt and mt.__pairs or pairs)(tbl)
-    end  
+-- delay loaded tables fail to deserialize cross [C] boundaries (such as when having to read files that cause yields)
+local local_pairs = function(tbl)
+    local mt = getmetatable(tbl)
+    return (mt and mt.__pairs or pairs)(tbl)
+end
 
+-- Important: pretty formatting will allow presenting non-serializable values
+-- but may generate output that cannot be unserialized back.
+function serialization.serialize(value, pretty)
     local kw = {
         ["and"] = true,
         ["break"] = true,
@@ -47,7 +50,9 @@ function serialization.serialization(value, pretty)
             end
         elseif t == "string" then
             table.insert(result_pack, (string.format("%q", current_value):gsub("\\\n", "\\n")))
-        elseif t == "nil" or t == "boolean" or pretty and (t ~= "table" or (getmetatable(current_value) or {}).__tostring) then
+        elseif
+            t == "nil" or t == "boolean" or pretty and (t ~= "table" or (getmetatable(current_value) or {}).__tostring)
+         then
             table.insert(result_pack, tostring(current_value))
         elseif t == "table" then
             if ts[current_value] then
@@ -131,7 +136,7 @@ function serialization.serialization(value, pretty)
     recurse(value, 1)
     local result = table.concat(result_pack)
     if pretty then
-        local limit = type(pretty) == "number" and pretty or 32
+        local limit = type(pretty) == "number" and pretty or 10
         local truncate = 0
         while limit > 0 and truncate do
             truncate = string.find(result, "\n", truncate + 1, true)
@@ -144,9 +149,9 @@ function serialization.serialization(value, pretty)
     return result
 end
 
-function serialization.unserialization(data)
+function serialization.unserialize(data)
     checkArg(1, data, "string")
-    local result, reason = load("return " .. data, "=unserialization", "t", {math={huge=math.huge}})
+    local result, reason = load("return " .. data, "=data", nil, {math = {huge = math.huge}})
     if not result then
         return nil, reason
     end

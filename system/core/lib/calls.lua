@@ -26,10 +26,10 @@ calls.loaded = { --тут записаны функции которые ран�
     saveFile = fs.writeFile,
 
     serialization = function (...)
-        return require("serialization").serialization(...)
+        return require("serialization").serialize(...)
     end,
     unserialization = function (...)
-        return require("serialization").unserialization(...)
+        return require("serialization").unserialize(...)
     end,
 
     uuid = function ()

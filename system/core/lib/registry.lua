@@ -7,7 +7,7 @@ local registry = {unloadable = true, data = {}, path = "/data/registry.dat"}
 if fs.exists(registry.path) then
     local content = fs.readFile(registry.path)
     if content then
-        local result = {pcall(serialization.unserialization, content)}
+        local result = {pcall(serialization.unserialize, content)}
         if result[1] and type(result[2]) == "table" then
             registry.data = result[2]
         end
@@ -15,7 +15,7 @@ if fs.exists(registry.path) then
 end
 
 function registry.save()
-    fs.writeFile(registry.path, serialization.serialization(registry.data))
+    fs.writeFile(registry.path, serialization.serialize(registry.data))
 end
 
 setmetatable(registry, {__newindex = function(tbl, key, value)

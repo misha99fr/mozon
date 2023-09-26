@@ -159,7 +159,7 @@ function system.setUnloadState(state)
 end
 system.setUnloadState(false)
 
-system.timerId = event.timer(1, function()
+system.timerId = event.timer(3, function()
     --check RAM
     if computer.freeMemory() < computer.totalMemory() / 3 then
         system.setUnloadState(true)

@@ -33,7 +33,7 @@ function paths.xconcat(...) --работает как concat но пути на�
         checkArg(index, value, "string")
     end
     for index, value in ipairs(set) do
-        if value:sub(1, 1) == "/" and index > 1 then
+        if unicode.sub(value, 1, 1) == "/" and index > 1 then
             local newset = {}
             for i = index, #set do
                 table.insert(newset, set[i])
@@ -62,6 +62,20 @@ function paths.canonical(path)
     end
 end
 
+function paths.equals(...)
+    local pathsList = {...}
+    for key, path in pairs(pathsList) do
+        pathsList[key] = paths.canonical(path)
+    end
+    local mainPath = pathsList[1]
+    for i = 2, #pathsList do
+        if mainPath ~= pathsList[i] then
+            return false
+        end
+    end
+    return true
+end
+
 function paths.path(path)
     local parts = paths.segments(path)
     local result = table.concat(parts, "/", 1, #parts - 1) .. "/"
@@ -82,8 +96,8 @@ function paths.extension(path)
     local name = paths.name(path)
 
 	local exp
-    for i = 1, #name do
-        local char = name:sub(i, i)
+    for i = 1, unicode.len(name) do
+        local char = unicode.sub(name, i, i)
         if char == "." then
             if i ~= 1 then
                 exp = ""
@@ -93,7 +107,7 @@ function paths.extension(path)
         end
     end
 
-    if exp and #exp > 0 then
+    if exp and unicode.len(exp) > 0 then
         return exp
     end
 end
@@ -103,7 +117,7 @@ function paths.hideExtension(path)
 
     local exp = paths.extension(path)
     if exp then
-        return path:sub(1, #path - (#exp + 1))
+        return unicode.sub(1, unicode.len(path) - (unicode.len(exp) + 1))
     else
         return path
     end

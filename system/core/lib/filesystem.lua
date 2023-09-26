@@ -9,6 +9,13 @@ local bootloader = require("bootloader")
 local filesystem = {}
 filesystem.mountList = {}
 
+local function endSlash(path)
+    if unicode.sub(path, unicode.len(path), unicode.len(path)) ~= "/" then
+        return path .. "/"
+    end
+    return path
+end
+
 function filesystem.mount(proxy, path)
     if type(proxy) == "string" then
         local lproxy, err = component.proxy(proxy)
@@ -18,8 +25,7 @@ function filesystem.mount(proxy, path)
         proxy = lproxy
     end
 
-    path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    path = endSlash(paths.canonical(path))
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
             return nil, "another filesystem is already mounted here"
@@ -33,8 +39,7 @@ function filesystem.mount(proxy, path)
 end
 
 function filesystem.umount(path)
-    path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    path = endSlash(paths.canonical(path))
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
             table.remove(filesystem.mountList, i)
@@ -44,12 +49,23 @@ function filesystem.umount(path)
     return false
 end
 
+function filesystem.mounts()
+    local list = {}
+    for i, v in ipairs(filesystem.mountList) do
+        local proxy, path = v[1], v[2]
+        list[path] = proxy
+        list[proxy] = path
+        list[proxy.address] = path
+        list[i] = v
+    end
+    return list
+end
+
 function filesystem.get(path)
-    path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    path = endSlash(paths.canonical(path))
     for i = 1, #filesystem.mountList do
-        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == (filesystem.mountList[i][2]) then
-            if not pcall(filesystem.mountList[i][1].exists, "/null") then
+        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == filesystem.mountList[i][2] then
+            if not pcall(filesystem.mountList[i][1].exists, "/null") then --disconnect check
                 table.remove(filesystem.mountList, i)
                 return filesystem.get(path)
             end
@@ -60,6 +76,16 @@ function filesystem.get(path)
     if filesystem.mountList[1] then
         return filesystem.mountList[1][1], filesystem.mountList[1][2]
     end
+end
+
+function filesystem.rawPath(path)
+    path = paths.canonical(path)
+    local proxy, mountpath = filesystem.get(path)
+    local lpath = unicode.sub(path, unicode.len(mountpath), unicode.len(path))
+    if unicode.sub(lpath, 1, 1) ~= "/" then
+        lpath = "/" .. lpath
+    end
+    return lpath
 end
 
 --[[
@@ -135,7 +161,7 @@ end
 function filesystem.rename(fromPath, toPath)
     fromPath = paths.canonical(fromPath)
     toPath = paths.canonical(toPath)
-    if fromPath == toPath then return end
+    if paths.equals(fromPath, toPath) then return end
 
     local fromProxy, fromProxyPath = filesystem.get(fromPath)
     local toProxy, toProxyPath = filesystem.get(toPath)
@@ -184,7 +210,7 @@ end
 function filesystem.copy(fromPath, toPath, fcheck)
     fromPath = paths.canonical(fromPath)
     toPath = paths.canonical(toPath)
-    if fromPath == toPath then return end
+    if paths.equals(fromPath, toPath) then return end
     local function copyRecursively(fromPath, toPath)
         if not fcheck or fcheck(fromPath, toPath) then
             if filesystem.isDirectory(fromPath) then
@@ -255,10 +281,7 @@ end
 
 
 filesystem.bootaddress = bootloader.bootaddress
-
-if not _G.FS_DISABLEAUTOMOUNT then
-    assert(filesystem.mount(filesystem.bootaddress, "/"))
-    assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
-end
+assert(filesystem.mount(filesystem.bootaddress, "/"))
+assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
 
 return filesystem

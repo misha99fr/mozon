@@ -74,7 +74,7 @@ local function menu(label, strs, funcs, withoutBackButton, refresh)
         if eventData[1] == "key_down" and eventData[2] == keyboard then
             if eventData[4] == 28 then
                 if funcs[selected] then
-                    if funcs[selected](strs[selected]) then
+                    if funcs[selected](strs[selected], eventData[5]) then
                         break
                     else
                         if refresh then
@@ -137,25 +137,10 @@ local function input(str)
     
 end
 
-local function getNickname(str)
-    clearScreen()
-    centerPrint(centerY, str)
-    centerPrint(centerY + 1, "Press Enter To Get Your Nickname")
-    
-    while true do
-        local eventData = {computer.pullSignal()}
-        if eventData[1] == "key_down" and eventData[2] == keyboard then
-            if eventData[4] == 28 then
-                return eventData[5]
-            end
-        end
-    end
-end
-
 local function selectfile(proxy, folder)
     folder = folder or "/"
 
-    local ret
+    local ret, nickname
     local files = {}
     local funcs = {}
     local list = proxy.list(folder)
@@ -163,21 +148,21 @@ local function selectfile(proxy, folder)
     for _, filename in ipairs(list) do
         local path = folder .. filename
         table.insert(files, filename)
-        table.insert(funcs, function ()
+        table.insert(funcs, function (_, lnick)
             if proxy.isDirectory(path) then
-                ret = selectfile(proxy, path)
+                ret, nickname = selectfile(proxy, path)
                 if ret then
                     return true
                 end
             else
-                ret = path
+                ret, nickname = path, lnick
                 return true
             end
         end)
     end
 
     menu("Select A File: " .. proxy.address:sub(1, 4) .. "-" .. folder, files, funcs)
-    return ret
+    return ret, nickname
 end
 
 -------------------------------------------------------------- micro programs
@@ -195,8 +180,8 @@ local function micro_userControl(str)
         end
         local funcs = {function ()
             add(input("Enter Nickname> "))
-        end, function ()
-            add(getNickname("Auto User Add"))
+        end, function (_, nickname)
+            add(nickname)
         end}
         for _, nickname in ipairs({computer.users()}) do
             table.insert(strs, nickname)
@@ -339,11 +324,11 @@ menu(bootloader.coreversion .. " recovery",
             
         end,
         function ()
-            local path = selectfile(bootloader.bootfs)
+            local path, nickname = selectfile(bootloader.bootfs)
             if path then
                 local code, err = bootloader.loadfile(path, nil, _ENV)
                 if code then
-                    local ok, err = pcall(code, screen)
+                    local ok, err = pcall(code, screen, nickname)
                     if not ok then
                         info({"Script Error", err})
                     end

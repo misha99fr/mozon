@@ -23,7 +23,7 @@ end
 if not registry.doNotWriteExternalData then
     write("devicetype", system.getDeviceType())
     write("deviceaddress", computer.address())
-    write("deviceinfo", serialization.serialization(lastinfo.deviceinfo))
+    write("deviceinfo", serialization.serialize(lastinfo.deviceinfo))
     write("ram", tostring(computer.totalMemory()))
 
     local components = {}
@@ -31,5 +31,5 @@ if not registry.doNotWriteExternalData then
         components[ctype] = components[ctype] or {}
         table.insert(components[ctype], address)
     end
-    write("components", serialization.serialization(components))
+    write("components", serialization.serialize(components))
 end
