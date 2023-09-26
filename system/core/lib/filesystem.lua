@@ -8,6 +8,7 @@ local bootloader = require("bootloader")
 
 local filesystem = {}
 filesystem.mountList = {}
+filesystem.baseFileDirectorySize = 512 --задаеться к конфиге мода(по умалчанию 512 байт)
 
 local function startSlash(path)
     if unicode.sub(path, 1, 1) ~= "/" then
@@ -63,15 +64,13 @@ function filesystem.umount(path)
     return false
 end
 
-function filesystem.mounts(addr)
+function filesystem.mounts()
     local list = {}
     for i, v in ipairs(filesystem.mountList) do
         local proxy, path = v[1], v[2]
-        if not addr or addr == proxy.address then
-            list[path] = v
-            list[proxy.address] = v
-            list[i] = v
-        end
+        list[path] = v
+        list[proxy.address] = v
+        list[i] = v
     end
     return list
 end
@@ -109,9 +108,36 @@ function filesystem.exists(path)
     return proxy.exists(proxyPath)
 end
 
-function filesystem.size(path)
+function filesystem.size(path, baseCostMath)
     local proxy, proxyPath = filesystem.get(path)
-    return proxy.size(proxyPath)
+    local size = 0
+    local function recurse(lpath)
+        for _, filename in ipairs(filesystem.list(lpath)) do
+            local fullpath = paths.concat(lpath, filename)
+            if proxy.isDirectory(fullpath) then
+                if baseCostMath then
+                    size = size + filesystem.baseFileDirectorySize
+                end
+                recurse(fullpath)
+            else
+                local lsize = proxy.size(fullpath)
+                size = size + lsize
+                if baseCostMath then
+                    size = size + filesystem.baseFileDirectorySize
+                end
+            end
+        end
+    end
+    if proxy.isDirectory(proxyPath) then
+        recurse(proxyPath)
+    else
+        local lsize = proxy.size(proxyPath)
+        size = size + lsize
+        if baseCostMath then
+            size = size + filesystem.baseFileDirectorySize
+        end
+    end
+    return size
 end
 
 function filesystem.isDirectory(path)
