@@ -9,9 +9,23 @@ local bootloader = require("bootloader")
 local filesystem = {}
 filesystem.mountList = {}
 
+local function startSlash(path)
+    if unicode.sub(path, 1, 1) ~= "/" then
+        return "/" .. path
+    end
+    return path
+end
+
 local function endSlash(path)
     if unicode.sub(path, unicode.len(path), unicode.len(path)) ~= "/" then
         return path .. "/"
+    end
+    return path
+end
+
+local function noEndSlash(path)
+    if unicode.len(path) > 1 and unicode.sub(path, unicode.len(path), unicode.len(path)) == "/" then
+        return unicode.sub(path, 1, unicode.len(path) - 1)
     end
     return path
 end
@@ -49,14 +63,15 @@ function filesystem.umount(path)
     return false
 end
 
-function filesystem.mounts()
+function filesystem.mounts(addr)
     local list = {}
     for i, v in ipairs(filesystem.mountList) do
         local proxy, path = v[1], v[2]
-        list[path] = proxy
-        list[proxy] = path
-        list[proxy.address] = path
-        list[i] = v
+        if not addr or addr == proxy.address then
+            list[path] = v
+            list[proxy.address] = v
+            list[i] = v
+        end
     end
     return list
 end
@@ -69,23 +84,13 @@ function filesystem.get(path)
                 table.remove(filesystem.mountList, i)
                 return filesystem.get(path)
             end
-            return filesystem.mountList[i][1], unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, -1)
+            return filesystem.mountList[i][1], noEndSlash(startSlash(unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, unicode.len(path))))
         end
     end
 
     if filesystem.mountList[1] then
         return filesystem.mountList[1][1], filesystem.mountList[1][2]
     end
-end
-
-function filesystem.rawPath(path)
-    path = paths.canonical(path)
-    local proxy, mountpath = filesystem.get(path)
-    local lpath = unicode.sub(path, unicode.len(mountpath), unicode.len(path))
-    if unicode.sub(lpath, 1, 1) ~= "/" then
-        lpath = "/" .. lpath
-    end
-    return lpath
 end
 
 --[[
