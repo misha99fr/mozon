@@ -19,14 +19,6 @@ function paths.segments(path)
     return parts
 end
 
-function paths.concat(...)
-    local set = table.pack(...)
-    for index, value in ipairs(set) do
-        checkArg(index, value, "string")
-    end
-    return paths.canonical(table.concat(set, "/"))
-end
-
 function paths.xconcat(...) --работает как concat но пути начинаюшиеся со / НЕ обрабатываються как отновительные а откидывают путь в начало
     local set = table.pack(...)
     for index, value in ipairs(set) do
@@ -53,13 +45,47 @@ function paths.sconcat(main, ...) --работает так же как concat �
     return false
 end
 
+local function baseCanonical(path)
+    local result = table.concat(paths.segments(path), "/")
+    if unicode.sub(path, 1, 1) == "/" then
+        return "/" .. result
+    end
+    return result
+end
+
+local function baseConcat(...)
+    local set = table.pack(...)
+    for index, value in ipairs(set) do
+        checkArg(index, value, "string")
+    end
+    return baseCanonical(table.concat(set, "/"))
+end
+
+local function basePath(path)
+    local parts = paths.segments(path)
+    local result = table.concat(parts, "/", 1, #parts - 1) .. "/"
+    if unicode.sub(path, 1, 1) == "/" and unicode.sub(result, 1, 1) ~= "/" then
+        return baseCanonical("/" .. result)
+    else
+        return baseCanonical(result)
+    end
+end
+
+function paths.concat(...)
+    local set = table.pack(...)
+    for index, value in ipairs(set) do
+        checkArg(index, value, "string")
+    end
+    return paths.canonical(table.concat(set, "/"))
+end
+
 function paths.canonical(path)
     local result = table.concat(paths.segments(path), "/")
     if unicode.sub(path, 1, 1) == "/" then
         return "/" .. result
     else
-        --return result
-        return paths.concat(paths.path(require("system").getSelfScriptPath()), result)
+        return result
+        --return baseConcat(basePath(require("system").getSelfScriptPath()), path)
     end
 end
 
