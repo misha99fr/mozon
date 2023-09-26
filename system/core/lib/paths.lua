@@ -117,7 +117,7 @@ function paths.hideExtension(path)
 
     local exp = paths.extension(path)
     if exp then
-        return unicode.sub(1, unicode.len(path) - (unicode.len(exp) + 1))
+        return unicode.sub(path, 1, unicode.len(path) - (unicode.len(exp) + 1))
     else
         return path
     end
