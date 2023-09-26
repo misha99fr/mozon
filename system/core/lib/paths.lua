@@ -58,7 +58,8 @@ function paths.canonical(path)
     if unicode.sub(path, 1, 1) == "/" then
         return "/" .. result
     else
-        return result
+        --return result
+        return paths.concat(paths.path(require("system").getSelfScriptPath()), result)
     end
 end
 

@@ -107,7 +107,7 @@ function package.isInstalled(name)
 end
 
 function package.raw_reg(name, path)
-    if bootloader.bootfs.exists(path) then
+    if bootloader.bootfs.exists(path) and not package.loaded[name] and not package.cache[name] then
         local lib = bootloader.dofile(path, nil, bootloader.createEnv())
         if type(lib) == "table" and lib.unloadable then
             package.cache[name] = lib
