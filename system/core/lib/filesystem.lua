@@ -9,6 +9,8 @@ local bootloader = require("bootloader")
 local filesystem = {}
 filesystem.mountList = {}
 filesystem.baseFileDirectorySize = 512 --задаеться к конфиге мода(по умалчанию 512 байт)
+filesystem.autoMount = true
+filesystem.inited = false
 
 local function startSlash(path)
     if unicode.sub(path, 1, 1) ~= "/" then
@@ -40,16 +42,23 @@ function filesystem.mount(proxy, path)
         proxy = lproxy
     end
 
-    path = endSlash(paths.canonical(path))
+    path = paths.canonical(path)
+    if filesystem.inited then
+        filesystem.makeDirectory(paths.path(path))
+    end
+
+    path = endSlash(path)
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
             return nil, "another filesystem is already mounted here"
         end
     end
+
     table.insert(filesystem.mountList, {proxy, path})
     table.sort(filesystem.mountList, function(a, b) --просто нужно, иначе все по бараде пойдет
         return unicode.len(a[2]) > unicode.len(b[2])
     end)
+
     return true
 end
 
@@ -312,7 +321,13 @@ end
 
 
 filesystem.bootaddress = bootloader.bootaddress
-assert(filesystem.mount(filesystem.bootaddress, "/"))
-assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
+filesystem.tmpaddress = computer.tmpAddress()
 
+assert(filesystem.mount(filesystem.bootaddress, "/"))
+assert(filesystem.mount(filesystem.bootaddress, "/mnt/root"))
+
+assert(filesystem.mount(filesystem.tmpaddress, "/tmp"))
+assert(filesystem.mount(filesystem.tmpaddress, "/mnt/tmpfs"))
+
+filesystem.inited = true
 return filesystem

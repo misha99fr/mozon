@@ -167,7 +167,7 @@ function bootloader.bootstrap()
         end
     end
 
-    --package инициализирует библиотеки
+    --package инициализирует библиотек
     local package = bootloader.dofile("/system/core/lib/package.lua", bootloader.createEnv(), bootloader)
     _G.require = package.require
     _G.computer = nil
@@ -175,16 +175,13 @@ function bootloader.bootstrap()
     _G.unicode = nil
     _G.natives = nil
    
-
-    --подгрузка основных библиотек системмы, эти библиотеки должны быть подключенны зарания чтобы система работала коректно1
-    --package.raw_reg("vcomponent", "/system/core/lib/vcomponent.lua")
     package.raw_reg("paths",      "/system/core/lib/paths.lua")
     package.raw_reg("filesystem", "/system/core/lib/filesystem.lua")
-    --package.raw_reg("calls",      "/system/core/lib/calls.lua")
     require("vcomponent")
     require("calls")
-    require("event")
-    require("system")
+    local event = require("event")
+    local system = require("system")
+    local lastinfo = require("lastinfo")
 
     --проверка целосности системмы (юнит тесты)
     bootloader.unittests("/system/core/unittests")
@@ -195,8 +192,19 @@ function bootloader.bootstrap()
     bootloader.autorunsIn("/system/core/autoruns")
     bootloader.autorunsIn("/system/autoruns")
 
+    --инициализация компонентов
+    lastinfo.update()
+    for address, ctype in component.list() do
+        event.push("component_added", address, ctype)
+    end
+    event.sleep(0.1)
+
     --установка runlevel
     bootloader.runlevel = "kernel"
+
+    --инициализация процессов
+    event.push("init")
+    event.sleep(0.1)
 end
 
 function bootloader.runShell(path)

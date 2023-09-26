@@ -5,6 +5,8 @@ local cache = require("cache")
 local event = require("event")
 local lastinfo = require("lastinfo")
 local component = require("component")
+local fs = require("filesystem")
+local paths = require("paths")
 local system = {}
 
 -------------------------------------------------
@@ -168,5 +170,16 @@ system.timerId = event.timer(3, function()
         system.setUnloadState(false)
     end
 end, math.huge)
+
+event.hyperListen(function (eventType, componentUuid, componentType)
+    if fs.autoMount and componentType == "filesystem" then
+        local path = paths.concat("/mnt", componentUuid)
+        if eventType == "component_added" then
+            fs.mount(component.proxy(componentUuid), path)
+        elseif eventType == "component_removed" then
+            fs.umount(path)
+        end
+    end
+end)
 
 return system
