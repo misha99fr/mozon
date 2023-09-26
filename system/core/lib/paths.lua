@@ -1,8 +1,7 @@
 local unicode = require("unicode")
-
-------------------------------------
-
 local paths = {}
+paths.baseDirectory = "/data"
+paths.unloadable = true
 
 function paths.segments(path)
     local parts = {}
@@ -19,31 +18,7 @@ function paths.segments(path)
     return parts
 end
 
-function paths.xconcat(...) --работает как concat но пути начинаюшиеся со / НЕ обрабатываються как отновительные а откидывают путь в начало
-    local set = table.pack(...)
-    for index, value in ipairs(set) do
-        checkArg(index, value, "string")
-    end
-    for index, value in ipairs(set) do
-        if unicode.sub(value, 1, 1) == "/" and index > 1 then
-            local newset = {}
-            for i = index, #set do
-                table.insert(newset, set[i])
-            end
-            return paths.xconcat(table.unpack(newset))
-        end
-    end
-    return paths.canonical(table.concat(set, "/"))
-end
-
-function paths.sconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет false
-    main = paths.canonical(main) .. "/"
-    local path = paths.concat(main, ...) .. "/"
-    if unicode.sub(path, 1, unicode.len(main)) == main then
-        return paths.canonical(path)
-    end
-    return false
-end
+------------------------------------
 
 local function baseCanonical(path)
     local result = table.concat(paths.segments(path), "/")
@@ -71,6 +46,34 @@ local function basePath(path)
     end
 end
 
+------------------------------------
+
+function paths.xconcat(...) --работает как concat но пути начинаюшиеся со / НЕ обрабатываються как отновительные а откидывают путь в начало
+    local set = table.pack(...)
+    for index, value in ipairs(set) do
+        checkArg(index, value, "string")
+    end
+    for index, value in ipairs(set) do
+        if unicode.sub(value, 1, 1) == "/" and index > 1 then
+            local newset = {}
+            for i = index, #set do
+                table.insert(newset, set[i])
+            end
+            return paths.xconcat(table.unpack(newset))
+        end
+    end
+    return paths.canonical(table.concat(set, "/"))
+end
+
+function paths.sconcat(main, ...) --работает так же как concat но если итоговый путь не указывает на целевой обьект первого путя то вернет false
+    main = paths.canonical(main) .. "/"
+    local path = paths.concat(main, ...) .. "/"
+    if unicode.sub(path, 1, unicode.len(main)) == main then
+        return paths.canonical(path)
+    end
+    return false
+end
+
 function paths.concat(...)
     local set = table.pack(...)
     for index, value in ipairs(set) do
@@ -79,12 +82,14 @@ function paths.concat(...)
     return paths.canonical(table.concat(set, "/"))
 end
 
+------------------------------------
+
 function paths.canonical(path)
-    local result = table.concat(paths.segments(path), "/")
     if unicode.sub(path, 1, 1) == "/" then
-        return "/" .. result
+        return "/" .. table.concat(paths.segments(path), "/")
     else
-        return result
+        return baseConcat(paths.baseDirectory, path)
+        --return result
         --return baseConcat(basePath(require("system").getSelfScriptPath()), path)
     end
 end
@@ -150,5 +155,4 @@ function paths.hideExtension(path)
     end
 end
 
-paths.unloadable = true
 return paths
