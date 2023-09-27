@@ -18,27 +18,36 @@ function vgpu.create(gpu, screen)
 
     local currentBackgrounds = {}
     local currentForegrounds = {}
+    local currentBackgroundsPal = {}
+    local currentForegroundsPal = {}
     local currentChars = {}
 
     local backgrounds = {}
     local foregrounds = {}
+    local backgroundsPal = {}
+    local foregroundsPal = {}
     local chars = {}
 
-    local currentBack, settedBP = gpu.getBackground()
-    local currentFore, settedFP = gpu.getForeground()
+    local currentBack, currentBackPal = gpu.getBackground()
+    local currentFore, currentForePal = gpu.getForeground()
     local rx, ry = gpu.getResolution()
     local rsmax = (rx - 1) + ((ry - 1) * rx)
-    local settedB, settedF = currentBack, currentFore
-    if settedBP then settedB = gpu.getPaletteColor(settedB) end
-    if settedFP then settedF = gpu.getPaletteColor(settedF) end
 
     local concat = table.concat
 
     for i = 0, rsmax do
         backgrounds[i] = 0
         currentBackgrounds[i] = 0
+
         foregrounds[i] = 0xffffff
         currentForegrounds[i] = 0xffffff
+
+        backgroundsPal[i] = false
+        currentBackgroundsPal[i] = false
+
+        foregroundsPal[i] = false
+        currentForegroundsPal[i] = false
+
         chars[i] = " "
         currentChars[i] = " "
     end
@@ -48,35 +57,27 @@ function vgpu.create(gpu, screen)
     end
 
     function obj.getBackground()
-        return settedB, settedBP
+        return currentBack, currentBackPal
     end
 
     function obj.getForeground()
-        return settedF, settedFP
+        return currentFore, currentForePal
     end
 
     function obj.setBackground(col, isPal)
-        if isPal then
-            local old = currentBack
-            currentBack = gpu.getPaletteColor(col)
-            return old
-        else
-            local old = currentBack
-            currentBack = col
-            return old
-        end
+        local old = currentBack
+        local oldPal = currentBackPal
+        currentBack = col
+        currentBackPal = not not isPal
+        return old, oldPal
     end
 
     function obj.setForeground(col, isPal)
-        if isPal then
-            local old = currentFore
-            currentFore = gpu.getPaletteColor(col)
-            return old
-        else
-            local old = currentFore
-            currentFore = col
-            return old
-        end
+        local old = currentFore
+        local oldPal = currentForePal
+        currentFore = col
+        currentForePal = not not isPal
+        return old, oldPal
     end
 
     function obj.getResolution()
@@ -110,6 +111,8 @@ function vgpu.create(gpu, screen)
             local index = ((x + (i - 1)) - 1) + ((y - 1) * rx)
             backgrounds[index] = currentBack
             foregrounds[index] = currentFore
+            backgroundsPal[index] = currentBackPal
+            foregroundsPal[index] = currentForePal
             chars[index] = unicode.sub(text, i, i)
         end
 
@@ -148,6 +151,8 @@ function vgpu.create(gpu, screen)
                 local index = (ix - 1) + ((iy - 1) * rx)
                 backgrounds[index] = currentBack
                 foregrounds[index] = currentFore
+                backgroundsPal[index] = currentBackPal
+                foregroundsPal[index] = currentForePal
                 chars[index] = char
             end
         end
@@ -174,7 +179,7 @@ function vgpu.create(gpu, screen)
         gpu.copy(x, y, sx, sy, ox, oy)
 
         --капируем картинку в буфере
-        local newB, newF, newC = {}, {}, {}
+        local newB, newF, newBP, newFP, newC = {}, {}, {}, {}, {}
         for ix = x, x + (sx - 1) do 
             for iy = y, y + (sy - 1) do
                 local index = (ix - 1) + ((iy - 1) * rx)
@@ -182,6 +187,8 @@ function vgpu.create(gpu, screen)
 
                 newB[newindex] = backgrounds[index]
                 newF[newindex] = foregrounds[index]
+                newBP[newindex] = backgroundsPal[index]
+                newFP[newindex] = foregroundsPal[index]
                 newC[newindex] = chars[index]
             end
         end
@@ -189,10 +196,14 @@ function vgpu.create(gpu, screen)
         for newindex in pairs(newC) do
             backgrounds[newindex] = newB[newindex]
             foregrounds[newindex] = newF[newindex]
+            backgroundsPal[newindex] = newBP[newindex]
+            foregroundsPal[newindex] = newFP[newindex]
             chars[newindex] = newC[newindex]
             
             currentBackgrounds[newindex] = newB[newindex] --чтобы это не требовалось перерисовывать(так как этот метод применяет изображения сразу)
             currentForegrounds[newindex] = newF[newindex]
+            currentBackgroundsPal[newindex] = newBP[newindex]
+            currentForegroundsPal[newindex] = newFP[newindex]
             currentChars[newindex] = newC[newindex]
         end
     end
@@ -201,33 +212,45 @@ function vgpu.create(gpu, screen)
         if updated then
             init()
 
-            local i = 0
+            local i, index, buff, buffI, back, backPal, fore, forePal = 0
             while i <= rsmax do
-                if backgrounds[i] and backgrounds[i] ~= currentBackgrounds[i] or foregrounds[i] ~= currentForegrounds[i] or chars[i] ~= currentChars[i] or (i + 1) % rx == 0 then
-                    local buff = {}
-                    local buffI = 1
-                    local back = backgrounds[i]
-                    local fore = foregrounds[i]
-                    local index = i
+                if backgrounds[i] and (
+                    backgrounds[i] ~= currentBackgrounds[i] or
+                    foregrounds[i] ~= currentForegrounds[i] or
+                    backgroundsPal[i] ~= currentBackgroundsPal[i] or
+                    foregroundsPal[i] ~= currentForegroundsPal[i] or
+                    chars[i] ~= currentChars[i] or
+                    (i + 1) % rx == 0) then
+                    buff = {}
+                    buffI = 1
+                    back, backPal = backgrounds[i], backgroundsPal[i]
+                    fore, forePal = foregrounds[i], foregroundsPal[i]
+                    index = i
                     while true do
                         buff[buffI] = chars[i]
                         buffI = buffI + 1
-                        if back == backgrounds[i + 1] and fore == foregrounds[i + 1] and (i + 1) % rx ~= 0 then
+                        if back == backgrounds[i + 1] and fore == foregrounds[i + 1] and
+                        backPal == backgroundsPal[i + 1] and forePal == foregroundsPal[i + 1] and
+                        (i + 1) % rx ~= 0 then
                             currentBackgrounds[i] = backgrounds[i]
                             currentForegrounds[i] = foregrounds[i]
+                            currentBackgroundsPal[i] = backgroundsPal[i]
+                            currentForegroundsPal[i] = foregroundsPal[i]
                             currentChars[i] = chars[i]
                             i = i + 1
                         else
                             break
                         end
                     end
-                    gpu.setBackground(back)
-                    gpu.setForeground(fore)
+                    gpu.setBackground(back, backPal)
+                    gpu.setForeground(fore, forePal)
                     gpu.set((index % rx) + 1, (index // rx) + 1, concat(buff))
                 end
 
                 currentBackgrounds[i] = backgrounds[i]
                 currentForegrounds[i] = foregrounds[i]
+                currentBackgroundsPal[i] = backgroundsPal[i]
+                currentForegroundsPal[i] = foregroundsPal[i]
                 currentChars[i] = chars[i]
                 i = i + 1
             end
