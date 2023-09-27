@@ -66,6 +66,9 @@ function vgpu.create(gpu, screen)
     end
 
     function obj.setBackground(col, isPal)
+        checkArg(1, col, "number")
+        checkArg(2, isPal, "boolean", "nil")
+
         local old = currentBack
         local oldPal = currentBackPal
         currentBack = col
@@ -74,6 +77,9 @@ function vgpu.create(gpu, screen)
     end
 
     function obj.setForeground(col, isPal)
+        checkArg(1, col, "number")
+        checkArg(2, isPal, "boolean", "nil")
+        
         local old = currentFore
         local oldPal = currentForePal
         currentFore = col
