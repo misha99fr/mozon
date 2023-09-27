@@ -363,7 +363,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                             if oldFore ~= chr[2] or oldBack ~= chr[3] or ypos ~= oldY then
                                 local lmax = xpos + (unicode.len(buff) - 1)
                                 if lmax > maxX then
-                                    buff = unicode.sub(buff, 1, constrain(unicode.len(buff) - (lmax - maxX), 0, math.huge))
+                                    buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                                 end
                                 if ypos <= maxY then
                                     --gpu.setForeground(oldFore, self.isPal)
@@ -382,7 +382,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                         end
                         local lmax = xpos + (unicode.len(buff) - 1)
                         if lmax > maxX then
-                            buff = unicode.sub(buff, 1, constrain(unicode.len(buff) - (lmax - maxX), 0, math.huge))
+                            buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                         end
                         if ypos <= maxY then
                             --gpu.setForeground(oldFore, self.isPal)
@@ -697,7 +697,7 @@ end
 ------------------------------------
 
 local gradients = {"░", "▒", "▓"}
-function graphic._formatColor(gpu, back, backPal, fore, forePal, text)
+function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalIndex)
     local depth = gpu.getDepth()
 
     local function getGradient(col, pal)
@@ -773,6 +773,21 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text)
         text = table.concat(buff)
     end
 
+    if noPalIndex then
+        if newBackPal then
+            if newBack >= 0 and newBack <= 15 then
+                newBack = gpu.getPaletteColor(newBack)
+            end
+            newBackPal = false
+        end
+
+        if newForePal then
+            if newFore >= 0 and newFore <= 15 then
+                newFore = gpu.getPaletteColor(newFore)
+            end
+            newForePal = false
+        end
+    end
     return newBack, newBackPal, newFore, newForePal, text
 end
 
@@ -835,18 +850,19 @@ function graphic.findGpu(screen)
     if bestGpu then
         local gpu = component.proxy(bestGpu)
 
-        if graphic.allowSoftwareBuffer and isVGpuInstalled and not graphic.vgpus[screen] then
-            graphic.vgpus[screen] = require("vgpu").create(gpu, screen)
-        end
-
-        if graphic.vgpus[screen] then
-            return graphic.vgpus[screen]
+        if isVGpuInstalled and not graphic.vgpus[screen] then
+            local vgpu = require("vgpu")
+            if graphic.allowSoftwareBuffer then
+                graphic.vgpus[screen] = vgpu.create(gpu, screen)
+            else
+                graphic.vgpus[screen] = vgpu.createStub(gpu)
+            end
         end
 
         if gpu.getScreen() ~= screen then
             gpu.bind(screen, false)
         end
-        
+
         if gpu.setActiveBuffer then
             if graphic.allowHardwareBuffer then
                 if not graphic.screensBuffers[screen] then
@@ -861,6 +877,10 @@ function graphic.findGpu(screen)
                 gpu.setActiveBuffer(0)
                 gpu.freeAllBuffers()
             end
+        end
+
+        if graphic.vgpus[screen] then
+            return graphic.vgpus[screen]
         end
 
         return gpu

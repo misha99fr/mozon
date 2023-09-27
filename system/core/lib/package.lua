@@ -18,6 +18,7 @@ for key, value in pairs(_G) do
 end
 package.cache = {}
 package.loadingList = {}
+package.allowEnclosedLoadingCycle = false
 
 function package.find(name)
     local fs = require("filesystem")
@@ -82,13 +83,17 @@ function package.require(name)
     end
 
     if package.loadingList[name] then
-        return setmetatable({}, {__index = function (_, key)
-            loadLib()
-            return libtbl[key]
-        end, __newindex = function (_, key, value)
-            loadLib()
-            libtbl[key] = value
-        end})
+        if package.allowEnclosedLoadingCycle then
+            return setmetatable({}, {__index = function (_, key)
+                loadLib()
+                return libtbl[key]
+            end, __newindex = function (_, key, value)
+                loadLib()
+                libtbl[key] = value
+            end})
+        else
+            error("enclosed loading cycle is disabled", 2)
+        end
     else
         return loadLib()
     end
