@@ -42,10 +42,10 @@ end
 local function set(self, x, y, background, foreground, text)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        --gpu.setBackground(background, self.isPal)
-        --gpu.setForeground(foreground, self.isPal)
-        --gpu.set(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), text)
-        graphic._set(gpu, valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), background, self.isPal, foreground, self.isPal, text)
+        gpu.setBackground(background, self.isPal)
+        gpu.setForeground(foreground, self.isPal)
+        gpu.set(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), text)
+        --graphic._set(gpu, valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), background, self.isPal, foreground, self.isPal, text)
     end
 
     graphic.update(self.screen)
@@ -61,13 +61,15 @@ end
 local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        --gpu.setBackground(background, self.isPal)
-        --gpu.setForeground(foreground, self.isPal)
-        --gpu.fill(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), valueCheck(sizeX), valueCheck(sizeY), char)
+        gpu.setBackground(background, self.isPal)
+        gpu.setForeground(foreground, self.isPal)
+        gpu.fill(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), valueCheck(sizeX), valueCheck(sizeY), char)
+        --[[
         graphic._fill(gpu,
         valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)),
         valueCheck(sizeX), valueCheck(sizeY),
         background, self.isPal, foreground, self.isPal, char)
+        ]]
     end
 
     graphic.update(self.screen)
@@ -101,24 +103,26 @@ local function write(self, data, background, foreground, autoln)
         local buffer = ""
         local setX, setY = self.cursorX, self.cursorY
         local function applyBuffer()
-            --gpu.set(self.x + (setX - 1), self.y + (setY - 1), buffer)
+            gpu.set(self.x + (setX - 1), self.y + (setY - 1), buffer)
+            --[[
             graphic._set(gpu,
             self.x + (setX - 1), self.y + (setY - 1),
             background or (self.isPal and colors.black or 0), self.isPal,
             foreground or (self.isPal and colors.white or 0xFFFFFF), self.isPal,
             buffer)
             buffer = ""
+            ]]
             setX, setY = self.cursorX, self.cursorY
         end
 
-        --gpu.setBackground(background or (self.isPal and colors.black or 0), self.isPal)
-        --gpu.setForeground(foreground or (self.isPal and colors.white or 0xFFFFFF), self.isPal)
+        gpu.setBackground(background or (self.isPal and colors.black or 0), self.isPal)
+        gpu.setForeground(foreground or (self.isPal and colors.white or 0xFFFFFF), self.isPal)
 
         for i = 1, unicode.len(data) do
             local char = unicode.sub(data, i, i)
             local ln = autoln and self.cursorX > self.sizeX
             local function setChar()
-                --gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
+                gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
                 buffer = buffer .. char
                 self.cursorX = self.cursorX + 1
             end
@@ -329,13 +333,13 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
             local xpos = (self.x + (x - 1)) + offsetX
             local ypos = (self.y + (y - 1)) + offsetY
 
-            --gpu.setForeground(foreground, self.isPal)
-            --gpu.setBackground(background, self.isPal)
-            --gpu.fill(xpos, ypos, sizeX, sizeY, " ")
-            graphic._fill(gpu, xpos, ypos, sizeX, sizeY, background, self.isPal, foreground, self.isPal, " ")
+            gpu.setForeground(foreground, self.isPal)
+            gpu.setBackground(background, self.isPal)
+            gpu.fill(xpos, ypos, sizeX, sizeY, " ")
+            --graphic._fill(gpu, xpos, ypos, sizeX, sizeY, background, self.isPal, foreground, self.isPal, " ")
             if createdX then
-                graphic._set(gpu, createdX, y, background, self.isPal, foreground, self.isPal, preStr)
-                --gpu.set(createdX, y, preStr)
+                --graphic._set(gpu, createdX, y, background, self.isPal, foreground, self.isPal, preStr)
+                gpu.set(createdX, y, preStr)
             end
 
             if chars[1] then
@@ -366,10 +370,10 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                                     buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                                 end
                                 if ypos <= maxY then
-                                    --gpu.setForeground(oldFore, self.isPal)
-                                    --gpu.setBackground(oldBack, self.isPal)
-                                    --gpu.set(xpos, ypos, buff)
-                                    graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                                    gpu.setForeground(oldFore, self.isPal)
+                                    gpu.setBackground(oldBack, self.isPal)
+                                    gpu.set(xpos, ypos, buff)
+                                    --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
                                 end
 
                                 buff = ""
@@ -385,10 +389,10 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                             buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                         end
                         if ypos <= maxY then
-                            --gpu.setForeground(oldFore, self.isPal)
-                            --gpu.setBackground(oldBack, self.isPal)
-                            --gpu.set(xpos, ypos, buff)
-                            graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                            gpu.setForeground(oldFore, self.isPal)
+                            gpu.setBackground(oldBack, self.isPal)
+                            gpu.set(xpos, ypos, buff)
+                            --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
                         end
                     
                         ypos = ypos + 1
@@ -743,7 +747,7 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
 
     local newBack, newBackPal = formatCol(back, backPal)
     local newFore, newForePal = formatCol(fore, forePal)
-    local gradient
+    local gradient, gradientEmpty = nil, true
 
     if not newBack then
         newBack = 0x000000
@@ -752,10 +756,6 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
 
     if not newFore then
         newFore = 0xffffff
-    end
-
-    if depth == 1 and newBack == newFore then
-        newFore = 0
     end
 
     if gradient then
@@ -767,13 +767,39 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
                 buff[buffI] = gradient
             else
                 buff[buffI] = char
+                gradientEmpty = false
             end
             buffI = buffI + 1
         end
         text = table.concat(buff)
     end
 
-    if noPalIndex then
+    if depth == 1 then
+        local empty = true
+        for i = 1, unicode.len(text) do
+            local char = unicode.sub(text, i, i)
+            if char ~= " " then
+                empty = false
+                break
+            end
+        end
+        
+        if not empty and newBack == newFore then
+            if gradientEmpty then
+                if newBack == 0 then
+                    newFore = 0xffffff
+                else
+                    newBack = 0
+                end
+            else
+                if newFore == 0 then
+                    newBack = 0xffffff
+                else
+                    newFore = 0
+                end
+            end
+        end
+    elseif noPalIndex then
         if newBackPal then
             if newBack >= 0 and newBack <= 15 then
                 newBack = gpu.getPaletteColor(newBack)
@@ -788,6 +814,7 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
             newForePal = false
         end
     end
+
     return newBack, newBackPal, newFore, newForePal, text
 end
 

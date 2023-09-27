@@ -323,9 +323,13 @@ function vgpu.createStub(gpu)
 
     function obj.set(x, y, text)
         local newBack, newBackPal, newFore, newForePal, text = graphic._formatColor(gpu, back, backPal, fore, forePal, text)
+        if fgUpdated then
+            gpu.setForeground(newFore, newForePal)            
+            fgUpdated = false
+        end
         if bgUpdated then
             gpu.setBackground(newBack, newBackPal)
-            gpu.setForeground(newFore, newForePal)
+            bgUpdated = false
         end
         gpu.set(x, y, text)
     end
@@ -333,8 +337,12 @@ function vgpu.createStub(gpu)
     function obj.fill(x, y, sx, sy, char)
         local newBack, newBackPal, newFore, newForePal, char = graphic._formatColor(gpu, back, backPal, fore, forePal, char)
         if fgUpdated then
+            gpu.setForeground(newFore, newForePal)            
+            fgUpdated = false
+        end
+        if bgUpdated then
             gpu.setBackground(newBack, newBackPal)
-            gpu.setForeground(newFore, newForePal)
+            bgUpdated = false
         end
         gpu.fill(x, y, sx, sy, char)
     end
