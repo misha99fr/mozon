@@ -42,9 +42,10 @@ end
 local function set(self, x, y, background, foreground, text)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        gpu.setBackground(background, self.isPal)
-        gpu.setForeground(foreground, self.isPal)
-        gpu.set(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), text)
+        --gpu.setBackground(background, self.isPal)
+        --gpu.setForeground(foreground, self.isPal)
+        --gpu.set(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), text)
+        graphic._set(gpu, valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), background, self.isPal, foreground, self.isPal, text)
     end
 
     graphic.update(self.screen)
@@ -60,9 +61,13 @@ end
 local function fill(self, x, y, sizeX, sizeY, background, foreground, char)
     local gpu = graphic.findGpu(self.screen)
     if gpu then
-        gpu.setBackground(background, self.isPal)
-        gpu.setForeground(foreground, self.isPal)
-        gpu.fill(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), valueCheck(sizeX), valueCheck(sizeY), char)
+        --gpu.setBackground(background, self.isPal)
+        --gpu.setForeground(foreground, self.isPal)
+        --gpu.fill(valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)), valueCheck(sizeX), valueCheck(sizeY), char)
+        graphic._fill(gpu,
+        valueCheck(self.x + (x - 1)), valueCheck(self.y + (y - 1)),
+        valueCheck(sizeX), valueCheck(sizeY),
+        background, self.isPal, foreground, self.isPal, char)
     end
 
     graphic.update(self.screen)
@@ -665,8 +670,7 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
     if selected ~= nil then
         obj.selected = selected
     else
-        local gpu = graphic.findGpu(screen)
-        obj.selected = gpu and gpu.getDepth() == 1
+        obj.selected = false
     end
 
     if obj.selected then --за раз может быть активно только одно окно
@@ -679,6 +683,98 @@ function graphic.createWindow(screen, x, y, sizeX, sizeY, selected, isPal)
 
     table.insert(graphic.windows, obj)
     return obj
+end
+
+------------------------------------
+
+function graphic._formatColor(gpu, back, backPal, fore, forePal, text)
+    local depth = gpu.getDepth()
+
+    local function getGradient(col, pal)
+        local gradients = {"░", "▒", "▓"}
+        if pal then
+            if col == colors.gray then
+                return gradients[2]
+            elseif col == colors.lightGray then
+                return gradients[3]
+            end
+        else
+            local r, g, b = colors.unBlend(col)
+            local val = math.round((r + g + b) / 3)
+            local point = math.round(255 / 3)
+            if val <= point then
+                return gradients[1]
+            elseif val <= (point * 2) then
+                return gradients[2]
+            else
+                return gradients[3]
+            end
+        end
+    end
+
+    local function formatCol(col, pal)
+        if depth == 1 then
+            if pal then
+                if col == colors.black then
+                    return 0x000000
+                elseif col == colors.white then
+                    return 0xffffff
+                end
+            else
+                if col == 0x000000 then
+                    return 0x000000
+                elseif col == 0xffffff then
+                    return 0xffffff
+                end
+            end
+        else
+            return col, pal
+        end
+    end
+
+    local newBack, newBackPal = formatCol(back, backPal)
+    local newFore, newForePal = formatCol(fore, forePal)
+    local gradient
+
+    if not newBack then
+        newBack = 0x000000
+        gradient = getGradient(back, backPal)
+    end
+
+    if not newFore then
+        newFore = 0xffffff
+    end
+
+    if gradient then
+        local buff = {}
+        local buffI = 1
+        for i = 1, unicode.len(text) do
+            local char = unicode.sub(text, i, i)
+            if char == " " then
+                buff[buffI] = gradient
+            else
+                buff[buffI] = char
+            end
+            buffI = buffI + 1
+        end
+        text = table.concat(buff)
+    end
+
+    return newBack, newBackPal, newFore, newForePal, text
+end
+
+function graphic._set(gpu, x, y, back, backPal, fore, forePal, text)
+    back, backPal, fore, forePal, text = graphic._formatColor(gpu, back, backPal, fore, forePal, text)
+    gpu.setBackground(back, backPal)
+    gpu.setForeground(fore, forePal)
+    gpu.set(x, y, text)
+end
+
+function graphic._fill(gpu, x, y, sx, sy, back, backPal, fore, forePal, char)
+    back, backPal, fore, forePal, char = graphic._formatColor(gpu, back, backPal, fore, forePal, char)
+    gpu.setBackground(back, backPal)
+    gpu.setForeground(fore, forePal)
+    gpu.fill(x, y, sx, sy, char)
 end
 
 ------------------------------------
