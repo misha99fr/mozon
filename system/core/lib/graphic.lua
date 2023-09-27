@@ -750,6 +750,7 @@ function graphic.findGpu(screen)
                 end
             else
                 gpu.setActiveBuffer(0)
+                gpu.freeAllBuffers()
             end
         end
 
