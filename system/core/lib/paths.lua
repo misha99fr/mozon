@@ -112,6 +112,7 @@ function paths.equals(...)
 end
 
 function paths.path(path)
+    path = paths.canonical(path)
     local parts = paths.segments(path)
     local result = table.concat(parts, "/", 1, #parts - 1) .. "/"
     if unicode.sub(path, 1, 1) == "/" and unicode.sub(result, 1, 1) ~= "/" then
