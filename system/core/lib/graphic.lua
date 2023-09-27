@@ -785,7 +785,7 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
         end
         
         if not empty and newBack == newFore then
-            if gradientEmpty then
+            if gradient and gradientEmpty then
                 if newBack == 0 then
                     newFore = 0xffffff
                 else
