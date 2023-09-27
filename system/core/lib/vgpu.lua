@@ -1,4 +1,5 @@
 local unicode = require("unicode")
+local graphic = require("graphic")
 local vgpu = {}
 
 function vgpu.create(gpu, screen)
@@ -103,6 +104,7 @@ function vgpu.create(gpu, screen)
     end
 
     function obj.set(x, y, text)
+        local currentBack, currentBackPal, currentFore, currentForePal, text = graphic._formatColor(gpu, currentBack, currentBackPal, currentFore, currentForePal, text)
         x = math.floor(x)
         y = math.floor(y)
 
@@ -120,6 +122,7 @@ function vgpu.create(gpu, screen)
     end
 
     function obj.fill(x, y, sizeX, sizeY, char)
+        local currentBack, currentBackPal, currentFore, currentForePal, char = graphic._formatColor(gpu, currentBack, currentBackPal, currentFore, currentForePal, char)
         x = math.floor(x)
         y = math.floor(y)
         sizeX = math.floor(sizeX)
