@@ -13,10 +13,12 @@ local isVGpuInstalled = package.isInstalled("vgpu")
 ------------------------------------
 
 local graphic = {}
-graphic.screensBuffers = {}
-graphic.updated = {}
+graphic.colorAutoFormat = true --рисует псевдографикой на первом тире оттенки серого
 graphic.allowHardwareBuffer = false
 graphic.allowSoftwareBuffer = false
+
+graphic.screensBuffers = {}
+graphic.updated = {}
 graphic.windows = setmetatable({}, {__mode = "v"})
 graphic.inputHistory = {}
 
@@ -702,49 +704,46 @@ end
 
 local gradients = {"░", "▒", "▓"}
 function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalIndex)
+    if not graphic.colorAutoFormat then
+        return back, backPal, fore, forePal, text
+    end
+
     local depth = gpu.getDepth()
 
     local function getGradient(col, pal)
-        if pal then
-            if col == colors.lightGray then
-                return gradients[3]
-            else
-                return gradients[2]
-            end
+        if pal and col >= 0 and col <= 15 then
+            col = gpu.getPaletteColor(col)
+        end
+        
+        local r, g, b = colors.unBlend(col)
+        local val = math.round((r + g + b) / 3)
+        local point = math.round(255 / 3)
+        if val <= point then
+            return gradients[1]
+        elseif val <= (point * 2) then
+            return gradients[2]
         else
-            local r, g, b = colors.unBlend(col)
-            local val = math.round((r + g + b) / 3)
-            local point = math.round(255 / 3)
-            if val <= point then
-                return gradients[1]
-            elseif val <= (point * 2) then
-                return gradients[2]
-            else
-                return gradients[3]
-            end
+            return gradients[3]
         end
     end
 
     local function formatCol(col, pal)
         if depth == 1 then
-            if pal then
-                if col == colors.black then
-                    return 0x000000
-                elseif col == colors.white then
-                    return 0xffffff
-                end
-            else
-                if col == 0x000000 then
-                    return 0x000000
-                elseif col == 0xffffff then
-                    return 0xffffff
-                end
+            if pal and col >= 0 and col <= 15 then
+                col = gpu.getPaletteColor(col)
+            end
+
+            if col == 0x000000 then
+                return 0x000000
+            elseif col == 0xffffff then
+                return 0xffffff
             end
         else
             return col, pal
         end
     end
 
+    local oldEquals = back == fore
     local newBack, newBackPal = formatCol(back, backPal)
     local newFore, newForePal = formatCol(fore, forePal)
     local gradient, gradientEmpty = nil, true
@@ -752,13 +751,6 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
     if not newBack then
         newBack = 0x000000
         gradient = getGradient(back, backPal)
-    end
-
-    if not newFore then
-        newFore = 0xffffff
-    end
-
-    if gradient then
         local buff = {}
         local buffI = 1
         for i = 1, unicode.len(text) do
@@ -774,23 +766,15 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
         text = table.concat(buff)
     end
 
+    if not newFore then
+        newFore = 0xffffff
+    end
+
     if depth == 1 then
-        local empty = true
-        for i = 1, unicode.len(text) do
-            local char = unicode.sub(text, i, i)
-            if char ~= " " then
-                empty = false
-                break
-            end
-        end
-        
-        if not empty and newBack == newFore then
+        if not oldEquals and newBack == newFore then
             if gradient and gradientEmpty then
-                if newBack == 0 then
-                    newFore = 0xffffff
-                else
-                    newBack = 0
-                end
+                newBack = 0x000000
+                newFore = 0xffffff
             else
                 if newFore == 0 then
                     newBack = 0xffffff
