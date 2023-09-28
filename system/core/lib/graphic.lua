@@ -99,6 +99,7 @@ local function getCursor(self)
 end
 
 local function write(self, data, background, foreground, autoln)
+    graphic.update(self.screen)
     local gpu = graphic.findGpu(self.screen)
 
     if gpu then
@@ -106,14 +107,7 @@ local function write(self, data, background, foreground, autoln)
         local setX, setY = self.cursorX, self.cursorY
         local function applyBuffer()
             gpu.set(self.x + (setX - 1), self.y + (setY - 1), buffer)
-            --[[
-            graphic._set(gpu,
-            self.x + (setX - 1), self.y + (setY - 1),
-            background or (self.isPal and colors.black or 0), self.isPal,
-            foreground or (self.isPal and colors.white or 0xFFFFFF), self.isPal,
-            buffer)
             buffer = ""
-            ]]
             setX, setY = self.cursorX, self.cursorY
         end
 
@@ -124,7 +118,7 @@ local function write(self, data, background, foreground, autoln)
             local char = unicode.sub(data, i, i)
             local ln = autoln and self.cursorX > self.sizeX
             local function setChar()
-                gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
+                --gpu.set(self.x + (self.cursorX - 1), self.y + (self.cursorY - 1), char)
                 buffer = buffer .. char
                 self.cursorX = self.cursorX + 1
             end
@@ -142,8 +136,6 @@ local function write(self, data, background, foreground, autoln)
 
         applyBuffer()
     end
-
-    graphic.update(self.screen)
 end
 
 local function uploadEvent(self, eventData)
@@ -716,8 +708,17 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
         end
         
         local r, g, b = colors.unBlend(col)
-        local val = math.round((r + g + b) / 3)
-        local point = math.round(255 / 3)
+        local step = math.round(255 / #gradients)
+        local index = 1
+        for i = 0, 255, step do
+            if i >= ((r + g + b) / 3) then
+                return gradients[math.max(index - 1, 1)]
+            end
+            index = index + 1
+        end
+        --return gradients[math.round(((r + g + b) / 3 / 255) * (#gradients - 1)) + 1]
+        --[[
+        local point = math.round(255 / #gradients)
         if val <= point then
             return gradients[1]
         elseif val <= (point * 2) then
@@ -725,6 +726,7 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
         else
             return gradients[3]
         end
+        ]]
     end
 
     local function formatCol(col, pal)
@@ -802,6 +804,7 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
     return newBack, newBackPal, newFore, newForePal, text
 end
 
+--[[
 function graphic._set(gpu, x, y, back, backPal, fore, forePal, text)
     back, backPal, fore, forePal, text = graphic._formatColor(gpu, back, backPal, fore, forePal, text)
     gpu.setBackground(back, backPal)
@@ -815,6 +818,7 @@ function graphic._fill(gpu, x, y, sx, sy, back, backPal, fore, forePal, char)
     gpu.setForeground(fore, forePal)
     gpu.fill(x, y, sx, sy, char)
 end
+]]
 
 ------------------------------------
 
