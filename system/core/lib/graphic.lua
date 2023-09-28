@@ -254,7 +254,10 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
         end
     end
 
-    local function getForeCol(i, def)
+    local function getForeCol(i, def, pal)
+        if pal then
+            def = gpu.getPaletteColor(def)
+        end
         if selectFrom and selectColorFore then
             return (i >= selectFrom and i <= selectTo) and selectColorFore or def
         else
@@ -319,7 +322,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                     for i = 1, unicode.len(value[3]) do
                         local setTo = value[5] + (i - 1)
                         if not chars[setTo] then isBreak = true break end
-                        chars[setTo] = {unicode.sub(value[3], i, i), getForeCol(i, value[4]), getBackCol(setTo)}
+                        chars[setTo] = {unicode.sub(value[3], i, i), getForeCol(i, value[4], true), getBackCol(setTo)}
                     end
                     if isBreak then break end
                 end

@@ -1,8 +1,7 @@
 local unicode = require("unicode")
-local gui_container = require("gui_container")
-local colors = gui_container.colors
+local colors = require("colors")
 local syntax = {}
-local keywords = {
+syntax.keywords = {
     ["function"] = colors.magenta,
     ["return"] = colors.magenta,
 
@@ -81,7 +80,7 @@ function syntax.parse(code)
                 elseif lostr or lostr2 or isred then
                     lcolor = colors.orange
                 else
-                    lcolor = keywords[lstr] or colors.white
+                    lcolor = syntax.keywords[lstr] or colors.white
                 end
                 
                 if lstr == "]]" then
@@ -100,7 +99,7 @@ end
 
 function syntax.draw(x, y, obj, gpu)
     for index, value in ipairs(obj) do
-        gpu.setForeground(value[4])
+        gpu.setForeground(value[4], true)
         gpu.set((x - 1) + value[1], (y - 1) + value[2], value[3])
     end
 end
