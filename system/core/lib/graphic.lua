@@ -696,11 +696,10 @@ end
 
 local gradients = {"░", "▒", "▓"}
 function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalIndex)
-    if not graphic.colorAutoFormat then
+    local depth = gpu.getDepth()
+    if not graphic.colorAutoFormat or depth > 1 then
         return back, backPal, fore, forePal, text
     end
-
-    local depth = gpu.getDepth()
 
     local function getGradient(col, pal)
         if pal and col >= 0 and col <= 15 then
