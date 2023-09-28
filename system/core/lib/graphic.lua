@@ -177,7 +177,7 @@ local function toRealPos(self, x, y)
     return self.x + (x - 1), self.y + (y - 1)
 end
 
-local function read(self, x, y, sizeX, background, foreground, preStr, hidden, buffer, clickCheck, syntax, disHistory, sizeY)
+local function read(self, x, y, sizeX, background, foreground, preStr, hidden, buffer, clickCheck, syntax)
     local createdX
     if preStr then
         createdX = x
@@ -185,11 +185,15 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
         sizeX = sizeX - #preStr
     end
 
-    sizeY = sizeY or 1
+    local sizeY = 1
     local isMultiline = sizeY ~= 1 --пока что не работает
 
     local maxX, maxY = self.x + (x - 1) + (sizeX - 1), self.y + (y - 1) + (sizeY - 1)
     
+    local disHistory = not not hidden
+    local disableClipboard = not not hidden
+    local maxDataSize = math.huge
+
     buffer = buffer or ""
     local lastBuffer = ""
     local allowUse = not clickCheck and self.selected
@@ -241,10 +245,6 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
 
     local offsetX = 0
     local offsetY = 0
-
-    if disHistory == nil then
-        disHistory = not not hidden
-    end
 
     local function getBackCol(i)
         if selectFrom then
@@ -507,6 +507,23 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
         end
     end
 
+    local function contrainBuffer()
+        while true do
+            local firstLen = unicode.len(buffer)
+            local lastLen = unicode.len(lastBuffer)
+            local currentLen = firstLen + lastLen
+            if currentLen > maxDataSize then
+                if firstLen > 0 then
+                    buffer = unicode.sub(buffer, 1, firstLen - 1)
+                else
+                    lastBuffer = unicode.sub(lastBuffer, 2, lastLen)
+                end
+            else
+                break
+            end
+        end
+    end
+
     local function add(inputStr)
         historyIndex = nil
         removeSelectedContent()
@@ -522,11 +539,12 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                 buffer = buffer .. chr
             end
         end
+        contrainBuffer()
         redraw()
     end
 
     local function clipboard(inputStr)
-        if not disHistory and inputStr then --при отключенной истории вставка не работает
+        if not disableClipboard and inputStr then
             local out = add(inputStr)
             if out then
                 removeSelect()
@@ -719,6 +737,12 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
         offsetY = y
     end, getOffset = function ()
         return offsetX, offsetY
+    end, setAllowHistory = function (allow)
+        disHistory = not allow
+    end, setAllowClipboard = function (allow)
+        disableClipboard = not allow
+    end, setMaxStringLen = function (max)
+        maxDataSize = max
     end}
 end
 
