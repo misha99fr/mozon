@@ -347,6 +347,7 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                 gpu.set(createdX, y, preStr)
             end
 
+            --[[
             if chars[1] then
                 local lines = {{}}
                 for _, chr in ipairs(chars) do
@@ -364,8 +365,8 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                 if lines[1][1] then
                     for offY, line in ipairs(lines) do
                         for offX, chr in ipairs(line) do
-                            local placeX = xpos + offX + offsetX
-                            local placeY = ypos + offY + offsetY
+                            local placeX = (xpos + offX + offsetX) - 1
+                            local placeY = (ypos + offY + offsetY) - 1
                             if placeX >= xpos and placeX < xpos + sizeX then
                                 if placeY >= ypos and placeY < ypos + sizeY then
                                     gpu.setForeground(chr[2], self.isPal)
@@ -377,8 +378,8 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                     end
                 end
             end
+            ]]
 
-            --[[
             if chars[1] then
                 local lines = {{}}
                 for _, chr in ipairs(chars) do
@@ -402,24 +403,30 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                     for offY, line in ipairs(lines) do
                         for offX, chr in ipairs(line) do
                             if oldFore ~= chr[2] or oldBack ~= chr[3] or ypos ~= oldY then
+                                --[[
                                 local lmax = xpos + (unicode.len(buff) - 1)
                                 if lmax > maxX then
                                     buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                                 end
                                 if ypos <= maxY then
-                                    gpu.setForeground(oldFore, self.isPal)
-                                    gpu.setBackground(oldBack, self.isPal)
+                                    ]]
+                                gpu.setForeground(oldFore, self.isPal)
+                                gpu.setBackground(oldBack, self.isPal)
 
-                                    local xplace = xpos + offsetX
-                                    local yplace = ypos + offsetY
-                                    --if yplace >= defYpos and yplace < defYpos + sizeY then
-                                        local bufflen = unicode.len(buff)
-                                        --if xplace >= defXpos and xplace < defXpos + sizeX then
-                                            gpu.set(xplace, yplace, buff)
-                                        --end
-                                    --end
-                                    --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                                local xplace = xpos + offsetX
+                                local yplace = ypos + offsetY
+                                if yplace >= defYpos and yplace < defYpos + sizeY and xplace < defXpos + sizeX then
+                                    while xplace < defXpos do
+                                        buff = unicode.sub(buff, 2, unicode.len(buff))
+                                        xplace = xplace + 1
+                                    end
+                                    while xplace + unicode.len(buff) > defXpos + sizeX do
+                                        buff = unicode.sub(buff, 1, unicode.len(buff) - 1)
+                                    end
+                                    gpu.set(xplace, yplace, buff)
                                 end
+                                    --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                                --end
 
                                 buff = ""
                                 xpos = self.x + ((x + offX) - 2)
@@ -429,24 +436,30 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                             end
                             buff = buff .. chr[1]
                         end
+                        --[[
                         local lmax = xpos + (unicode.len(buff) - 1)
                         if lmax > maxX then
                             buff = unicode.sub(buff, 1, math.clamp(unicode.len(buff) - (lmax - maxX), 0, math.huge))
                         end
                         if ypos <= maxY then
-                            gpu.setForeground(oldFore, self.isPal)
-                            gpu.setBackground(oldBack, self.isPal)
+                        ]]
+                        gpu.setForeground(oldFore, self.isPal)
+                        gpu.setBackground(oldBack, self.isPal)
 
-                            local xplace = xpos + offsetX
-                            local yplace = ypos + offsetY
-                            --if yplace >= defYpos and yplace < defYpos + sizeY then
-                                local bufflen = unicode.len(buff)
-                                --if xplace >= defXpos and xplace < defXpos + sizeX then
-                                    gpu.set(xplace, yplace, buff)
-                                --end
-                            --end
-                            --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                        local xplace = xpos + offsetX
+                        local yplace = ypos + offsetY
+                        if yplace >= defYpos and yplace < defYpos + sizeY and xplace < defXpos + sizeX then
+                            while xplace < defXpos do
+                                buff = unicode.sub(buff, 2, unicode.len(buff))
+                                xplace = xplace + 1
+                            end
+                            while xplace + unicode.len(buff) > defXpos + sizeX do
+                                buff = unicode.sub(buff, 1, unicode.len(buff) - 1)
+                            end
+                            gpu.set(xplace, yplace, buff)
                         end
+                            --graphic._set(gpu, xpos, ypos, oldBack, self.isPal, oldFore, self.isPal, buff)
+                        --end
                     
                         ypos = ypos + 1
                         xpos = self.x + (x - 1)
@@ -454,7 +467,6 @@ local function read(self, x, y, sizeX, background, foreground, preStr, hidden, b
                     end
                 end
             end
-            ]]
         end
 
         graphic.update(self.screen)
