@@ -14,8 +14,12 @@ _G._COREVERSION = "likeOS-v1.7"
 _G._OSVERSION = _G._COREVERSION --это перезаписываеться в дистрибутивах
 
 local bootloader = {} --библиотека загрузчика
+bootloader.firstEeprom = component.list("eeprom")() --хранит адрес eeprom с которого произошла загрузка
+bootloader.tmpaddress = computer.tmpAddress()
+
 bootloader.bootaddress = computer.getBootAddress()
 bootloader.bootfs = component.proxy(bootloader.bootaddress)
+
 bootloader.coreversion = _G._COREVERSION
 bootloader.runlevel = "init"
 

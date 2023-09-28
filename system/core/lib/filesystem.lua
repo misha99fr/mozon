@@ -321,13 +321,14 @@ end
 
 
 filesystem.bootaddress = bootloader.bootaddress
-filesystem.tmpaddress = computer.tmpAddress()
+filesystem.tmpaddress = bootloader.tmpaddress
 
 assert(filesystem.mount(filesystem.bootaddress, "/"))
-assert(filesystem.mount(filesystem.bootaddress, "/mnt/root"))
-
-assert(filesystem.mount(filesystem.tmpaddress, "/tmp"))
-assert(filesystem.mount(filesystem.tmpaddress, "/mnt/tmpfs"))
+if filesystem.autoMount then
+    assert(filesystem.mount(filesystem.tmpaddress, "/tmp"))
+    assert(filesystem.mount(filesystem.tmpaddress, "/mnt/tmpfs"))
+    assert(filesystem.mount(filesystem.bootaddress, "/mnt/root"))
+end
 
 filesystem.inited = true
 return filesystem
