@@ -709,13 +709,15 @@ function graphic._formatColor(gpu, back, backPal, fore, forePal, text, noPalInde
         
         local r, g, b = colors.unBlend(col)
         local step = math.round(255 / #gradients)
+        local val = ((r + g + b) / 3)
         local index = 1
         for i = 0, 255, step do
-            if i >= ((r + g + b) / 3) then
-                return gradients[math.max(index - 1, 1)]
+            if i > val then
+                return gradients[math.min(index - 1, #gradients)]
             end
             index = index + 1
         end
+        return gradients[#gradients]
         --return gradients[math.round(((r + g + b) / 3 / 255) * (#gradients - 1)) + 1]
         --[[
         local point = math.round(255 / #gradients)
