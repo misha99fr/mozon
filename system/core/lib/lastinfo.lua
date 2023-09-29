@@ -1,6 +1,7 @@
 local event = require("event")
 local computer = require("computer")
 local component = require("component")
+local bootloader = require("bootloader")
 local lastinfo = {}
 lastinfo.deviceinfo = computer.getDeviceInfo()
 lastinfo.keyboards = {}
@@ -17,14 +18,20 @@ end
 updateKeyboards()
 
 event.hyperListen(function (eventType, componentUuid, componentType)
-    local added = eventType == "component_added"
-    local removed = eventType == "component_removed"
-    if added or removed then
-        lastinfo.deviceinfo = computer.getDeviceInfo()
+    if bootloader.runlevel ~= "init" then
+        if eventType == "component_added" or eventType == "component_removed" then
+            lastinfo.deviceinfo = computer.getDeviceInfo()
 
-        if componentType == "keyboard" then
-            updateKeyboards()
+            if componentType == "keyboard" then
+                updateKeyboards()
+            end
         end
     end
 end)
+
+function lastinfo.update()
+    lastinfo.deviceinfo = computer.getDeviceInfo()
+    updateKeyboards()
+end
+
 return lastinfo

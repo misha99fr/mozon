@@ -1,7 +1,4 @@
---[[ Backwards compat for Lua 5.3; only loaded in 5.3 because package.loaded is
-     prepopulated with the existing global bit32 in 5.2. ]]
-
-local bit32 = {}
+local bit32 = {} --bit32 нет в lua5.3, библиотека нужна для совместимости
 
 -------------------------------------------------------------------------------
 

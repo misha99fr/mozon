@@ -2,11 +2,36 @@ local component = require("component")
 local computer = require("computer")
 local unicode = require("unicode")
 local paths = require("paths")
+local bootloader = require("bootloader")
 
 ------------------------------------
 
 local filesystem = {}
 filesystem.mountList = {}
+filesystem.baseFileDirectorySize = 512 --задаеться к конфиге мода(по умалчанию 512 байт)
+filesystem.autoMount = true
+filesystem.inited = false
+
+local function startSlash(path)
+    if unicode.sub(path, 1, 1) ~= "/" then
+        return "/" .. path
+    end
+    return path
+end
+
+local function endSlash(path)
+    if unicode.sub(path, unicode.len(path), unicode.len(path)) ~= "/" then
+        return path .. "/"
+    end
+    return path
+end
+
+local function noEndSlash(path)
+    if unicode.len(path) > 1 and unicode.sub(path, unicode.len(path), unicode.len(path)) == "/" then
+        return unicode.sub(path, 1, unicode.len(path) - 1)
+    end
+    return path
+end
 
 function filesystem.mount(proxy, path)
     if type(proxy) == "string" then
@@ -18,22 +43,27 @@ function filesystem.mount(proxy, path)
     end
 
     path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    if filesystem.inited then
+        filesystem.makeDirectory(paths.path(path))
+    end
+
+    path = endSlash(path)
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
             return nil, "another filesystem is already mounted here"
         end
     end
+
     table.insert(filesystem.mountList, {proxy, path})
     table.sort(filesystem.mountList, function(a, b) --просто нужно, иначе все по бараде пойдет
         return unicode.len(a[2]) > unicode.len(b[2])
     end)
+
     return true
 end
 
 function filesystem.umount(path)
-    path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    path = endSlash(paths.canonical(path))
     for i, v in ipairs(filesystem.mountList) do
         if v[2] == path then
             table.remove(filesystem.mountList, i)
@@ -43,16 +73,26 @@ function filesystem.umount(path)
     return false
 end
 
+function filesystem.mounts()
+    local list = {}
+    for i, v in ipairs(filesystem.mountList) do
+        local proxy, path = v[1], v[2]
+        list[path] = v
+        list[proxy.address] = v
+        list[i] = v
+    end
+    return list
+end
+
 function filesystem.get(path)
-    path = paths.canonical(path)
-    if path:sub(#path, #path) ~= "/" then path = path .. "/" end
+    path = endSlash(paths.canonical(path))
     for i = 1, #filesystem.mountList do
-        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == (filesystem.mountList[i][2]) then
-            if not pcall(filesystem.mountList[i][1].exists, "/null") then
+        if unicode.sub(path, 1, unicode.len(filesystem.mountList[i][2])) == filesystem.mountList[i][2] then
+            if not pcall(filesystem.mountList[i][1].exists, "/null") then --disconnect check
                 table.remove(filesystem.mountList, i)
                 return filesystem.get(path)
             end
-            return filesystem.mountList[i][1], unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, -1)
+            return filesystem.mountList[i][1], noEndSlash(startSlash(unicode.sub(path, unicode.len(filesystem.mountList[i][2]) + 1, unicode.len(path))))
         end
     end
 
@@ -77,9 +117,36 @@ function filesystem.exists(path)
     return proxy.exists(proxyPath)
 end
 
-function filesystem.size(path)
+function filesystem.size(path, baseCostMath)
     local proxy, proxyPath = filesystem.get(path)
-    return proxy.size(proxyPath)
+    local size = 0
+    local function recurse(lpath)
+        for _, filename in ipairs(filesystem.list(lpath)) do
+            local fullpath = paths.concat(lpath, filename)
+            if proxy.isDirectory(fullpath) then
+                if baseCostMath then
+                    size = size + filesystem.baseFileDirectorySize
+                end
+                recurse(fullpath)
+            else
+                local lsize = proxy.size(fullpath)
+                size = size + lsize
+                if baseCostMath then
+                    size = size + filesystem.baseFileDirectorySize
+                end
+            end
+        end
+    end
+    if proxy.isDirectory(proxyPath) then
+        recurse(proxyPath)
+    else
+        local lsize = proxy.size(proxyPath)
+        size = size + lsize
+        if baseCostMath then
+            size = size + filesystem.baseFileDirectorySize
+        end
+    end
+    return size
 end
 
 function filesystem.isDirectory(path)
@@ -134,7 +201,7 @@ end
 function filesystem.rename(fromPath, toPath)
     fromPath = paths.canonical(fromPath)
     toPath = paths.canonical(toPath)
-    if fromPath == toPath then return end
+    if paths.equals(fromPath, toPath) then return end
 
     local fromProxy, fromProxyPath = filesystem.get(fromPath)
     local toProxy, toProxyPath = filesystem.get(toPath)
@@ -183,7 +250,7 @@ end
 function filesystem.copy(fromPath, toPath, fcheck)
     fromPath = paths.canonical(fromPath)
     toPath = paths.canonical(toPath)
-    if fromPath == toPath then return end
+    if paths.equals(fromPath, toPath) then return end
     local function copyRecursively(fromPath, toPath)
         if not fcheck or fcheck(fromPath, toPath) then
             if filesystem.isDirectory(fromPath) then
@@ -253,11 +320,15 @@ function filesystem.readFile(path)
 end
 
 
-filesystem.bootaddress = computer.getBootAddress()
+filesystem.bootaddress = bootloader.bootaddress
+filesystem.tmpaddress = bootloader.tmpaddress
 
-if not _G.FS_DISABLEAUTOMOUNT then
-    assert(filesystem.mount(filesystem.bootaddress, "/"))
-    assert(filesystem.mount(computer.tmpAddress(), "/tmp"))
+assert(filesystem.mount(filesystem.bootaddress, "/"))
+if filesystem.autoMount then
+    assert(filesystem.mount(filesystem.tmpaddress, "/tmp"))
+    assert(filesystem.mount(filesystem.tmpaddress, "/mnt/tmpfs"))
+    assert(filesystem.mount(filesystem.bootaddress, "/mnt/root"))
 end
 
+filesystem.inited = true
 return filesystem

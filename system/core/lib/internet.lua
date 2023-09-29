@@ -8,19 +8,22 @@ function internet.getInternetFile(url)
         return nil, "no internet-card"
     end
 
-    local handle, data, result, reason = inet.request(url), ""
+    local handle = inet.request(url)
+    local data = {}
+    local dataI = 1
     if handle then
         while true do
-            result, reason = handle.read(math.huge) 
+            local result, reason = handle.read(math.huge) 
             if result then
-                data = data .. result
+                data[dataI] = result
+                dataI = dataI + 1
             else
                 handle.close()
                 
                 if reason then
                     return nil, reason
                 else
-                    return data
+                    return table.concat(data)
                 end
             end
         end
@@ -29,5 +32,5 @@ function internet.getInternetFile(url)
     end
 end
 
-internet.unloaded = true
+internet.unloadable = true
 return internet

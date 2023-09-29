@@ -160,7 +160,7 @@ functions = { --это всеравно не будет доступно за п
     end
 }
 
-lib = {env = _ENV, unloaded = true}
+lib = {env = _ENV, unloadable = true}
 
 for name, func in pairs(functions) do --любое исключения в этих функциях - ненужная дрянь
     lib[name] = function (...)

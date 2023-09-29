@@ -1,5 +1,5 @@
 local fs = require("filesystem")
-local time = {unloaded = true}
+local time = {unloadable = true}
 
 function time.getRealTime()
     local file = assert(fs.open("/tmp/null", "wb"))

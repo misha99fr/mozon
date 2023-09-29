@@ -219,5 +219,5 @@ end
 
 sha256.sha256 = sha256.sha256hex --legacy method
 sha256.str2hexa = str2hexa
-sha256.unloaded = true
+sha256.unloadable = true
 return sha256

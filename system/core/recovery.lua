@@ -1,302 +1,401 @@
-local gpu, bootfs = ...
+local bootloader = bootloader
+local component = component
+local computer = computer
+local unicode = unicode
 
------------------------------------- base init
-
-local function getFile(fs, path)
-    local file, err = fs.open(path, "rb")
-    if not file then return nil, err end
-
-    local buffer = ""
-    repeat
-        local data = fs.read(file, math.huge)
-        buffer = buffer .. (data or "")
-    until not data
-    fs.close(file)
-
-    return buffer
-end
-
-local function saveFile(fs, path, data)
-    local file, err = fs.open(path, "wb")
-    if not file then return nil, err end
-
-    fs.write(file, data)
-    fs.close(file)
-
-    return true
-end
-
-local function raw_loadfile(path, mode, env)
-    local data, err = getFile(bootfs, path)
-    if not data then return nil, err end
-    return load(data, "=" .. path, mode or "bt", env or _G)
-end
-
-local cache = {}
-function require(name)
-    if _G[name] then
-        return _G[name]
-    end
-
-    if not cache[name] then
-        cache[name] = assert(raw_loadfile("/system/core/lib/" .. name .. ".lua"))()
-    end
-    return cache[name]
-end
-
-local paths = require("paths")
-local fs = require("filesystem")
-
-
-setmetatable(_G, {__index = function(_, key)
-    local code = raw_loadfile("/system/core/calls/" .. key .. ".lua")
-    if code then
-        return code
-    end
-end})
-
------------------------------------- base gui
-
+local screen = ...
+local deviceinfo = computer.getDeviceInfo()
+local gpu = component.proxy(component.list("gpu")() or "")
+if not gpu then return end
+bootloader.initScreen(gpu, screen, 80, 25) --на экране с более низким разрешениям будет выбрано максимальное. на экране с более высоким установленное
 local rx, ry = gpu.getResolution()
+local centerY = math.floor(ry / 2)
+local keyboard = component.invoke(screen, "getKeyboards")[1]
 
-local function clearColor()
-    gpu.setBackground(0)
-    gpu.setForeground(0xFFFFFF)
+-------------------------------------------------------------- local api
+
+local function getDeviceType()
+    local function isType(ctype)
+        return component.list(ctype)() and ctype
+    end
+    
+    local function isServer()
+        local obj = deviceinfo[computer.address()]
+        if obj and obj.description and obj.description:lower() == "server" then
+            return "server"
+        end
+    end
+    
+    return isType("tablet") or isType("microcontroller") or isType("drone") or isType("robot") or isServer() or isType("computer") or "unknown"
 end
 
-local function clear()
-    clearColor()
-    gpu.fill(1, 1, rx, ry, " ")
-end
-
-local function invert()
+local function invertColor()
     gpu.setBackground(gpu.setForeground(gpu.getBackground()))
 end
 
-local function menu(title, strs, selected)
-    local selected = selected or 1
-    
-    local function redraw()
-        clear()
-        gpu.set(1, 1, title)
-        gpu.fill(1, 2, rx, 1, "-")
+local function centerPrint(y, text)
+    gpu.set(((rx / 2) - (unicode.len(text) / 2)) + 1, y, text)
+end
 
+local function screenFill(y)
+    gpu.fill(8, y, rx - 15, 1, " ")
+end
 
-        for i, str in ipairs(strs) do
-            if i == selected then invert() end
-            gpu.set(1, i + 2, str)
-            if i == selected then invert() end
-        end
+local function clearScreen()
+    gpu.fill(1, 1, rx, ry, " ")
+end
+
+local function menu(label, strs, funcs, withoutBackButton, refresh)
+    local selected = 1
+
+    if not withoutBackButton then
+        table.insert(strs, "Back")
     end
 
+    local function redraw()
+        clearScreen()
+        invertColor()
+        centerPrint(2, label)
+        invertColor()
+
+        for i, str in ipairs(strs) do
+            if i == selected then
+                invertColor()
+                screenFill(3 + i)
+            end
+            centerPrint(3 + i, str)
+            if i == selected then invertColor() end
+        end
+    end
     redraw()
 
     while true do
         local eventData = {computer.pullSignal()}
-        if eventData[1] == "key_down" then
-            if eventData[4] == 208 then
-                if selected < #strs then
-                    selected = selected + 1
-                    redraw()
-                end
-            elseif eventData[4] == 200 then
-                if selected > 1 then
-                    selected = selected - 1
-                    redraw()
-                end
-            elseif eventData[4] == 28 then
-                return selected
-            end
-        end
-    end
-end
-
-local function yesno(title)
-    return menu(title, {"no", "no", "no", "no", "no", "no", "no", "no", "yes", "no", "no", "no"}) == 9
-end
-
-local function status(text, wait)
-    clear()
-    gpu.set(1, 1, text)
-
-    if wait then
-        gpu.set(1, 2, "press enter to contionue")
-    end
-
-    while wait do
-        local eventData = {computer.pullSignal()}
-        if eventData[1] == "key_down" and eventData[4] == 28 then
-            break
-        end
-    end
-end
-
-------------------------------------
-
-local function filePicker(title, noSysDisk)
-    local filesystems = {"cancel"}
-    local addresses = {false}
-    for address, ctype in component.list("filesystem") do
-        if not noSysDisk or address ~= bootfs.address then
-            table.insert(filesystems, (component.invoke(address, "getLabel") or "no label") .. ":" .. address:sub(1, 5) .. (address == bootfs.address and ":sys" or ""))
-            table.insert(addresses, address)
-        end
-    end
-
-    local cfs = component.proxy(addresses[menu("select disk", filesystems)] or "")
-    if not cfs then return end
-
-    ------------------------------------
-    
-    local path = "/"
-    local function getFiles()
-        local files = {}
-        for i, file in ipairs(cfs.list(path)) do
-            table.insert(files, file)
-        end
-        return files
-    end
-    
-    local selected = 1
-    while true do
-        local files = getFiles()
-        table.insert(files, 1, "-------- back --------")
-        table.insert(files, 1, "-------- cancel ------")
-
-        if selected > #files then
-            selected = #files
-        end
-        
-        selected = menu(title .. " : " .. path, files, selected)
-        if selected == 1 then
-            return
-        elseif selected == 2 then
-            path = paths.path(path)
-        else
-            local file = paths.concat(path, files[selected])
-        
-            if cfs.isDirectory(file) then
-                path = paths.concat(path, paths.name(file))
-            else
-                return cfs, file
-            end
-        end
-    end
-end
-
-local function logs()
-    local logs = {}
-    for i, str in ipairs(split(assert(getFile(bootfs, "/data/errorlog.log")), "\n")) do
-        local strs = toPartsUnicode(str, rx)
-        local exists
-        for i, str in ipairs(strs) do
-            table.insert(logs, str)
-            exists = true
-        end
-        if not exists then
-            table.insert(logs, "")
-        end
-    end
-
-    local scroll = 1
-
-    while true do
-        clear()
-        local count = 1
-        for i, str in ipairs(logs) do
-            if i >= scroll then
-                gpu.set(1, count, str)
-                if count > ry then
-                    break
-                end
-                count = count + 1
-            end
-        end
-
-        local eventData = {computer.pullSignal()}
-        if eventData[1] == "key_down" then
+        if eventData[1] == "key_down" and eventData[2] == keyboard then
             if eventData[4] == 28 then
-                break
-            elseif eventData[4] == 200 then --up
-                if scroll > 1 then
-                    scroll = scroll - 1
-                end
-            elseif eventData[4] == 208 then --down
-                if scroll < #logs - ry then
-                    scroll = scroll + 1
-                end
-            end
-        end
-    end
-end
-
-------------------------------------
-
-local selected
-while true do
-    selected = menu(_COREVERSION .. " recovery menu",
-    {
-        "Wipe data/Factory reset",
-        "Flash afpx archive",
-        "Run Lua Script",
-        "View Logs",
-        "Clear Logs",
-        "Shutdown",
-        "Reboot"
-    }, selected)
-
-    if selected == 1 then
-        if yesno("wipe data?") then
-            bootfs.remove("/data")
-        end
-    elseif selected == 2 then
-        local cfs, path = filePicker("Select System Archive", true)
-
-        if cfs then
-            if paths.extension(path) == "afpx" then
-                if cfs ~= bootfs then
-                    if yesno("flash this file? all data will be deleted!") then
-                        fs.mountList = {}
-                        
-                        status("flashing...")
-
-                        local archiver = require("archiver")
-                        bootfs.remove("/")
-                        fs.mount(bootfs, "/sys")
-                        fs.mount(cfs, "/disk")
-                        assert(archiver.unpack(paths.concat("/disk", path), "/sys"))
-                        _G.DISABLE_TELEMETRY = true
-                        computer.shutdown(true)
+                if funcs[selected] then
+                    if funcs[selected](strs[selected], eventData[5]) then
+                        break
+                    else
+                        if refresh then
+                            local lstrs, lfuncs = refresh()
+                            if not withoutBackButton then
+                                table.insert(lstrs, "Back")
+                            end
+                            strs = lstrs
+                            funcs = lfuncs
+                        end
+                        redraw()
                     end
                 else
-                    status("you cannot install the firmware from this disk", true)
+                    break
                 end
-            else
-                status("is not AFPX file", true)
+            elseif eventData[4] == 200 then
+                selected = selected - 1
+                if selected < 1 then
+                    selected = 1
+                else 
+                    redraw()
+                end
+            elseif eventData[4] == 208 then
+                selected = selected + 1
+                if selected > #strs then
+                    selected = #strs
+                else
+                    redraw()
+                end
             end
         end
-    elseif selected == 3 then
-        local cfs, path = filePicker("select lua script")
-
-        if cfs then
-            local code, err = load(getFile(cfs, path), "=luascript", "bt", setmetatable({gpu = gpu, _G = _G}, {__index = _G}))
-            if not code then
-                error(err, 0)
-                return
-            end
-            code()
-        end
-    elseif selected == 4 then
-        if bootfs.exists("/data/errorlog.log") then
-            logs()
-        else
-            status("Logs Not Found", true)
-        end
-    elseif selected == 5 then
-        bootfs.remove("/data/errorlog.log")
-    elseif selected == 6 then
-        computer.shutdown()
-    elseif selected == 7 then
-        computer.shutdown(true)
     end
 end
+
+local function info(strs, withoutWaitEnter)
+    clearScreen()
+
+    if type(strs) ~= "table" then
+        strs = {strs}
+    end
+
+    if not withoutWaitEnter then
+        table.insert(strs, "Press Enter To Continue")
+    end
+    for i, str in ipairs(strs) do
+        centerPrint((centerY + (i - 1)) - math.floor((#strs / 2) + 0.5), str)
+    end
+    
+    while not withoutWaitEnter do
+        local eventData = {computer.pullSignal()}
+        if eventData[1] == "key_down" and eventData[2] == keyboard then
+            if eventData[4] == 28 then
+                break
+            end
+        end
+    end
+end
+
+local function input(str)
+    
+end
+
+local function selectfile(proxy, folder)
+    folder = folder or "/"
+
+    local ret, nickname
+    local files = {}
+    local funcs = {}
+    local list = proxy.list(folder)
+    table.sort(list)
+    for _, filename in ipairs(list) do
+        local path = folder .. filename
+        table.insert(files, filename)
+        table.insert(funcs, function (_, lnick)
+            if proxy.isDirectory(path) then
+                ret, nickname = selectfile(proxy, path)
+                if ret then
+                    return true
+                end
+            else
+                ret, nickname = path, lnick
+                return true
+            end
+        end)
+    end
+
+    menu("Select A File: " .. proxy.address:sub(1, 4) .. "-" .. folder, files, funcs)
+    return ret, nickname
+end
+
+-------------------------------------------------------------- micro programs
+
+local function micro_userControl(str)
+    local function refresh()
+        local strs = {"Add User", "Auto User Add"}
+        local function add(nickname)
+            if nickname then
+                local ok, err = computer.addUser(nickname)
+                if not ok then
+                    info(err or "Unknown Error")
+                end
+            end
+        end
+        local funcs = {function ()
+            add(input("Enter Nickname> "))
+        end, function (_, nickname)
+            add(nickname)
+        end}
+        for _, nickname in ipairs({computer.users()}) do
+            table.insert(strs, nickname)
+            table.insert(funcs, function ()
+                local ok, err = computer.removeUser(nickname)
+                if not ok then
+                    info(err or "Unknown Error")
+                end
+            end)
+        end
+        return strs, funcs
+    end
+    local strs, funcs = refresh()
+    menu(str, strs, funcs, nil, refresh)
+end
+
+local function micro_robotMoving(str)
+    local robot = component.proxy(component.list("robot")() or "")
+    if not robot then
+        info("This Program Only Works On The Robot")
+        return
+    end
+    --[[
+    menu(str,
+        {
+            "Forward",
+            "Up",
+            "Down",
+            "Turn Left",
+            "Turn Right"
+        },
+        {
+            function ()
+                robot.move(3)
+            end,
+            function ()
+                robot.move(1)
+            end,
+            function ()
+                robot.move(0)
+            end,
+            function ()
+                robot.turn(false)
+            end,
+            function ()
+                robot.turn(true)
+            end
+        }
+    )
+    ]]
+
+    clearScreen()
+    centerPrint(centerY - 1, "WASD - control")
+    centerPrint(centerY, "space/shift - up/down")
+    centerPrint(centerY + 1, "enter - exit")
+
+    while true do
+        local eventData = {computer.pullSignal()}
+        if eventData[1] == "key_down" and eventData[2] == keyboard then
+            if eventData[4] == 28 then
+                break
+            elseif eventData[4] == 17 then
+                robot.move(3)
+            elseif eventData[4] == 31 then
+                robot.move(2)
+            elseif eventData[4] == 30 then
+                robot.turn(false)
+            elseif eventData[4] == 32 then
+                robot.turn(true)
+            elseif eventData[4] == 57 then
+                robot.move(1)
+            elseif eventData[4] == 42 then
+                robot.move(0)
+            end
+        end
+    end
+end
+
+local function micro_microprograms(str)
+    menu(str, 
+        {
+            "User Control",
+            "Robot Moving"
+        },
+        {
+            micro_userControl,
+            micro_robotMoving
+        }
+    )
+end
+
+-------------------------------------------------------------- menu
+
+menu(bootloader.coreversion .. " recovery",
+    {
+        "Wipe Data / Factory Reset",
+        "Run Script From Url",
+        "Run Script From Disk",
+        "Micro Programs",
+        "Bootstrap",
+        "Shutdown",
+        "Info",
+    }, 
+    {
+        function (str)
+            menu(str,
+                {
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "No",
+                    "Yes",
+                    "No",
+                    "No",
+                    "No"
+                },
+                {
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    nil,
+                    function ()
+                        local result = {bootloader.bootfs.remove("/data")}
+                        if not result[1] then
+                            info(result[2] or "No Data Partition Found")
+                        else
+                            info("Data Successfully Wiped")
+                        end
+                        return true
+                    end
+                },
+                true
+            )
+        end,
+        function ()
+            
+        end,
+        function ()
+            local path, nickname = selectfile(bootloader.bootfs)
+            if path then
+                local code, err = bootloader.loadfile(path, nil, _ENV)
+                if code then
+                    local ok, err = pcall(code, screen, nickname)
+                    if not ok then
+                        info({"Script Error", err})
+                    end
+                else
+                    info({"Script Error(syntax)", err})
+                end
+            end
+        end,
+        micro_microprograms,
+        function ()
+            info({"Initializing The Kernel", "Please Wait"}, true)
+            local result = "Successful Kernel Initialization"
+            local ok, err = pcall(bootloader.bootstrap)
+            if not ok then
+                result = tostring(err or "Unknown Error")
+            end
+            info(result)
+        end,
+        function (str)
+            menu(str,
+                {
+                    "Shutdown",
+                    "Reboot",
+                    "Fast Reboot",
+                    "Reboot To Bios",
+                },
+                {
+                    function ()
+                        computer.shutdown()
+                    end,
+                    function ()
+                        computer.shutdown(true)
+                    end,
+                    function ()
+                        computer.shutdown("fast") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                    end,
+                    function ()
+                        computer.shutdown("bios") --поддерживаеться малым количеством bios`ов(по сути только моими)
+                    end
+                }
+            )
+        end,
+        function ()
+            local deviceType = getDeviceType()
+            local function short(str)
+                str = tostring(str)
+                if rx <= 50 then
+                    return str:sub(1, 8)
+                end
+                return str
+            end
+
+            local ramSize = tostring(math.floor((computer.totalMemory() / 1024) + 0.5)) .. "KB"
+            ramSize = ramSize .. " / " .. tostring(math.floor(((computer.totalMemory() - computer.freeMemory()) / 1024) + 0.5)) .. "KB"
+            local hddSize = tostring(math.floor((bootloader.bootfs.spaceTotal() / 1024) + 0.5)) .. "KB"
+            hddSize = hddSize .. " / " .. tostring(math.floor((bootloader.bootfs.spaceUsed() / 1024) + 0.5)) .. "KB"
+
+            info(
+                {
+                    "Computer Address: " .. short(computer.address()),
+                    "Disk     Address: " .. short(bootloader.bootfs.address),
+                    "Device      Type: " .. short(deviceType .. string.rep(" ", #bootloader.bootfs.address - #deviceType)),
+                    "System  Runlevel: " .. short(bootloader.runlevel .. string.rep(" ", #bootloader.bootfs.address - #bootloader.runlevel)),
+                    "Total/Used   RAM: " .. short(ramSize .. string.rep(" ", #bootloader.bootfs.address - #ramSize)),
+                    "Total/Used   HDD: " .. short(hddSize .. string.rep(" ", #bootloader.bootfs.address - #hddSize))
+                }
+            )
+        end,
+    }
+)

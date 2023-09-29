@@ -1,4 +1,4 @@
-local raw_dofile, bootfs = ...
+local bootloader = ...
 local component = component
 local computer = computer
 local unicode = unicode
@@ -6,14 +6,19 @@ local unicode = unicode
 ------------------------------------
 
 local package = {}
-package.paths = {"/data/lib",  "/vendor/lib", "/system/lib", "/system/core/usr/lib", "/system/core/lib"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
-package.loaded = {["package"] = package}
+package.paths = {"/data/lib",  "/vendor/lib", "/system/lib", "/system/core/lib"} --позиция по мере снижения приоритета(первый элемент это самый высокий приоритет)
+package.loaded = {
+    ["package"] = package,
+    ["bootloader"] = bootloader
+}
 for key, value in pairs(_G) do
     if type(value) == "table" then
         package.loaded[key] = value
     end
 end
 package.cache = {}
+package.loadingList = {}
+package.allowEnclosedLoadingCycle = false
 
 function package.find(name)
     local fs = require("filesystem")
@@ -49,28 +54,49 @@ function package.find(name)
 end
 
 function package.require(name)
-    if not package.loaded[name] and not package.cache[name] then
-        local finded = package.find(name)
-        if not finded then
-            error("lib " .. name .. " is not found", 2)
+    local libtbl = package.loaded[name] or package.cache[name]
+    if libtbl then return libtbl end
+
+    local function loadLib()
+        if libtbl then return libtbl end
+        if not package.loaded[name] and not package.cache[name] then
+            local finded = package.find(name)
+            if not finded then
+                error("lib " .. name .. " is not found", 3)
+            end
+
+            package.loadingList[name] = true
+            local lib = assert(loadfile(finded, nil, bootloader.createEnv()))()
+            package.loadingList[name] = nil
+
+            if type(lib) == "table" and lib.unloadable then
+                package.cache[name] = lib
+            else
+                package.loaded[name] = lib
+            end
         end
-        local fs = require("filesystem")
+        if not package.loaded[name] and not package.cache[name] then
+            error("lib " .. name .. " is not found" , 3)
+        end
+        libtbl = package.loaded[name] or package.cache[name]
+        return libtbl
+    end
 
-        local file = assert(fs.open(finded, "rb"))
-        local data = file.readAll()
-        file.close()
-
-        local lib = assert(load(data, "=" .. finded, nil, createEnv()))()
-        if type(lib) == "table" and lib.unloaded then
-            package.cache[name] = lib
+    if package.loadingList[name] then
+        if package.allowEnclosedLoadingCycle then
+            return setmetatable({}, {__index = function (_, key)
+                loadLib()
+                return libtbl[key]
+            end, __newindex = function (_, key, value)
+                loadLib()
+                libtbl[key] = value
+            end})
         else
-            package.loaded[name] = lib
+            error("enclosed loading cycle is disabled", 2)
         end
+    else
+        return loadLib()
     end
-    if not package.loaded[name] and not package.cache[name] then
-        error("lib " .. name .. " is not found" , 2)
-    end
-    return package.loaded[name] or package.cache[name]
 end
 
 function package.get(name)
@@ -85,30 +111,16 @@ function package.isInstalled(name)
     return not not package.find(name)
 end
 
-------------------------------------
-
-_G.require = package.require
-
-package.loaded.component = component
-package.loaded.computer = computer
-package.loaded.unicode = unicode
-
-local function raw_reg(name, path)
-    if bootfs.exists(path) then
-        local lib = raw_dofile(path, nil, createEnv())
-        if type(lib) == "table" and lib.unloaded then
+function package.raw_reg(name, path)
+    if bootloader.bootfs.exists(path) and not package.loaded[name] and not package.cache[name] then
+        local lib = bootloader.dofile(path, nil, bootloader.createEnv())
+        if type(lib) == "table" and lib.unloadable then
             package.cache[name] = lib
         else
             package.loaded[name] = lib
         end
     end
 end
-
-raw_reg("vcomponent", "/system/core/usr/lib/vcomponent.lua") --подгрузить зарания во избежании проблемм
-raw_reg("paths",      "/system/core/lib/paths.lua")      --подгрузить зарания во избежании проблемм
-raw_reg("filesystem", "/system/core/lib/filesystem.lua")
-raw_reg("calls",      "/system/core/lib/calls.lua")
-package.loaded.natives = _G.natives
 
 ------------------------------------
 

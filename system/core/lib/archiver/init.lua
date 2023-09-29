@@ -36,5 +36,5 @@ function archiver.unpack(inputpath, dir)
     end
 end
 
-archiver.unloaded = true
+archiver.unloadable = true
 return archiver
