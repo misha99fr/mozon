@@ -2,7 +2,6 @@
 /system/core/LICENSE
 /system/core/logo.lua
 /system/core/recovery.lua
-/system/core/autoruns/a_write_external_data.lua
 /system/core/boot/a_functions.lua
 /system/core/boot/b_event.lua
 /system/core/boot/c_screen.lua
