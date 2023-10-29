@@ -1,7 +1,7 @@
 MOZON OS ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ДЛЯ ПУНКТОВ ВЫДАЧИ MOZON
 Комманда для установки:
 
-https://raw.githubusercontent.com/misha99fr/mozon/main/installer/openOS.lua /tmp/asd -f && /tmp/asd
+wget https://raw.githubusercontent.com/misha99fr/mozon/main/installer/openOS.lua /tmp/asd -f && /tmp/asd
 
 ядро ос содержит простой api для работы с графикой, который поможет вам в осрисовки интерфейсов
 данный api позволит вам работать на нескольких мониторах, а заботу переключения gpu возмет на себя сам api
