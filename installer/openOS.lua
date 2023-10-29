@@ -18,10 +18,10 @@ local function readFunc(alternativeSplast)
     return read:sub(1, #read - 1)
 end
 
-print("вас приветствует мастер создания загрузочьного диска likeOS")
+print("Вас привествует установщик программного обеспечения MOZON в пунктах выдачи MOZON")
 print("выберите режим")
-print("1. создать устоновочьный диск")
-print("2. устоновить устоновшик в tmpfs и перезагрузиться туда(tmpfs будет очишенна)")
+print("1. Создать установочный образ")
+print("2. Установить в tmpfs (после установки tmpfs будет очищена)")
 local index = readFunc(true)
 if not index then
     return
@@ -31,8 +31,8 @@ local function installTo(address, auto, offlineMode)
     local proxy = component.proxy(address)
 
     if not auto then
-        print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " устоновочьным диском likeOS?")
-        print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+        print("вы уверены сделать диск " .. address:sub(1, 4) .. ":" .. (component.invoke(address, "getLabel") or "") .. " установочным?")
+        print("Диск будет форматирован")
 
         local ok = readFunc()
         if not ok or ok:lower() ~= "y" then
@@ -45,7 +45,7 @@ local function installTo(address, auto, offlineMode)
     fs.mount(proxy, mountPath)
 
     proxy.remove("/")
-    pcall(proxy.setLabel, "likeOS installer")
+    pcall(proxy.setLabel, "Mozon installer")
 
     ------------------------------------
 
@@ -147,7 +147,7 @@ local function installTo(address, auto, offlineMode)
         end
     end
 
-    print("создания загрузочьного диска завершено")
+    print("создание диска завершено")
 end
 
 if index == "1" then
@@ -161,8 +161,8 @@ if index == "1" then
         end
     end
 
-    print("выберите диск который хотите сделать устоновочьным")
-    print("ВСЕ ДАННЫЕ С ДИСКА БУДУТ УДАЛЕНЫ")
+    print("Выбери диск для создания дистрибутива")
+    print("ВСЕ БУДЕТ УДАЛЕНО БЛЯТЬ")
     local read = readFunc(true)
     if not read then return end
     if not tonumber(read) then
@@ -171,7 +171,7 @@ if index == "1" then
     end
     local address = variantes[tonumber(read)]
 
-    print("добавить на диск дистрибутивы и ядро для устоновки без internet card?(создания диска будет долгим)")
+    print("добавить на диск дистрибутивы и ядро для установки без internet card?(создания диска будет долгим)")
     local read = readFunc()
     if not read then return end
 
@@ -182,7 +182,7 @@ elseif index == "2" then
     local driveAddress = computer.tmpAddress()
 
     local function biosErr()
-        print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает устоновку загрузочьного насителя, попробуйте сами загрузиться с диска/tmpfs через биос, инструкция должна быть написана в описании вашего биоса")
+        print("¯\\_(ツ)_/¯ усп, ваш биос не поддерживает установку загрузочного насителя, попробуйте сами загрузиться с диска/tmpfs через биос, инструкция должна быть написана в описании вашего биоса")
         if component.isAvailable("eeprom") then
             print("ваш биос был определен как \"" .. (component.eeprom.getLabel() or "unknown") .. "\"")
         end
@@ -208,5 +208,5 @@ elseif index == "2" then
     end
     pcall(computer.shutdown, "fast")
 else
-    print("нету этого режима")
+    print("ДА И ТЫ НАХЕР")
 end
