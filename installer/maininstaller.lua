@@ -233,16 +233,16 @@ local function selectDist(dists)
 
     local num
     while true do
-        num = menu("select distribution", strs, num)
+        num = menu("select type", strs, num)
         if funcs[num] then
             local proxy = getInstallDisk()
             if proxy then
                 if menu("comfirm? the disk will be cleared!", {"NO", "Yes"}) == 2 then
-                    status("Please Wait")
+                    status("The Setup is copying and Installing Files")
                     proxy.remove("/")
                     local label = strs[num]
-                    if label == "core only" then
-                        label = "likeOS"
+                    if label == "No Gui" then
+                        label = "MOZON"
                     end
                     proxy.setLabel(label)
                     funcs[num](proxy)
@@ -265,7 +265,7 @@ local function offline()
             cloneTo("/distributions/" .. v, "/", proxy)
         end})
     end
-    table.insert(dists, {name = "core only", call = function(proxy)
+    table.insert(dists, {name = "No gui, only core", call = function(proxy)
         cloneTo("/core", "/", proxy)
     end})
     selectDist(dists)
