@@ -277,7 +277,7 @@ end
 
 menu(bootloader.coreversion .. " recovery",
     {
-        "Wipe Data / Factory Reset",
+        "RESET ALL DATA",
         "Run Script From Url",
         "Run Script From Disk",
         "Micro Programs",
