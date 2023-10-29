@@ -28,7 +28,7 @@ local depth = gpu.getDepth()
 
 local drive = component.proxy(computer.getBootAddress())
 local internet = component.proxy(component.list("internet")() or "")
-local installerVersion = "likeOS installer v1.1"
+local installerVersion = "Mozon Software v1.1"
 
 ------------------------------------
 
@@ -312,7 +312,7 @@ local strs = {"shutdown"}
 local funcs = {computer.shutdown}
 
 if internet then
-    table.insert(strs, 1, "online mode")
+    table.insert(strs, 1, "OEM ONLINE MODE")
     table.insert(funcs, 1, online)
 end
 
