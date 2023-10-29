@@ -89,7 +89,7 @@ local function installTo(address, auto, offlineMode)
         return parts
     end
 
-    local url = "https://raw.githubusercontent.com/igorkll/likeOS/main"
+    local url = "https://raw.githubusercontent.com/misha99fr/mozon/main"
 
     if offlineMode then
         local filelist = split(assert(getInternetFile(url .. "/installer/filelist.txt")), "\n")
@@ -139,7 +139,7 @@ local function installTo(address, auto, offlineMode)
             end
         end
 
-        local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/igorkll/likeOS/main/installer/list.txt")), "\n")
+        local filelist = split(assert(getInternetFile("https://raw.githubusercontent.com/misha99fr/mozon/main/installer/list.txt")), "\n")
         for i, v in ipairs(filelist) do
             if v ~= "" then
                 downloadDistribution(table.unpack(split(v, ";")))
